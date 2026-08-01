@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel · Ayla Select</title>
+<meta name="theme-color" content="#0B0B0C">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div class="login-box" id="tela-login">
+  <div class="marca" style="margin-bottom:20px;">
+    Ayla Select
+    <small>Painel administrativo</small>
+  </div>
+  <input class="campo" type="email" id="login-email" placeholder="E-mail">
+  <input class="campo" type="password" id="login-senha" placeholder="Senha">
+  <button class="botao-full" id="btn-entrar">Entrar</button>
+  <div class="erro-msg" id="login-erro"></div>
+</div>
+
+<!-- PAINEL -->
+<div class="admin-shell oculto" id="tela-painel">
+  <div class="admin-topo">
+    <h1 class="serif">Minhas clientes</h1>
+    <button class="sair-btn" id="btn-sair">Sair</button>
+  </div>
+
+  <input class="campo busca" id="busca-cliente" placeholder="Buscar cliente pelo nome...">
+
+  <div id="lista-clientes"></div>
+
+  <button class="botao-add-flutuante" id="btn-add">+</button>
+</div>
+
+<!-- MODAL: CADASTRAR / EDITAR CLIENTE -->
+<div class="modal-fundo oculto" id="modal-form">
+  <div class="modal-caixa" style="position:relative;">
+    <button class="fechar-modal" data-fechar>✕</button>
+    <h2 class="serif" id="modal-form-titulo">Nova cliente</h2>
+    <input type="hidden" id="form-id">
+
+    <div class="rotulo">Nome completo</div>
+    <input class="campo" id="form-nome" placeholder="Ex: Juliana Souza">
+
+    <div class="linha-2">
+      <div style="flex:1;">
+        <div class="rotulo">WhatsApp</div>
+        <input class="campo" id="form-whatsapp" placeholder="5511999999999">
+      </div>
+      <div style="flex:1;">
+        <div class="rotulo">Aniversário</div>
+        <input class="campo" type="date" id="form-aniversario">
+      </div>
+    </div>
+
+    <div class="linha-2">
+      <div style="flex:1;">
+        <div class="rotulo">Nível</div>
+        <select class="campo" id="form-nivel">
+          <option>VIP</option>
+          <option>Gold</option>
+          <option>Black</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <div class="rotulo">Visitas p/ recompensa</div>
+        <input class="campo" type="number" id="form-meta" placeholder="10" value="10">
+      </div>
+    </div>
+
+    <div class="rotulo">Foto (link de imagem — opcional)</div>
+    <input class="campo" id="form-foto" placeholder="https://...">
+
+    <div class="rotulo">Recompensa atual</div>
+    <input class="campo" id="form-recompensa" placeholder="Ex: Manutenção grátis">
+
+    <div class="rotulo">Benefícios (um por linha)</div>
+    <textarea class="campo" id="form-beneficios" placeholder="10% de desconto em esmaltação&#10;Prioridade na agenda&#10;Brinde de aniversário"></textarea>
+
+    <div class="rotulo">Cuidados pós-procedimento</div>
+    <textarea class="campo" id="form-cuidados" placeholder="Evite molhar a região nas primeiras 24h..."></textarea>
+
+    <div class="rotulo">Link de agendamento (opcional)</div>
+    <input class="campo" id="form-link-agendamento" placeholder="https://wa.me/... ou link da agenda">
+
+    <button class="botao-full" id="btn-salvar-cliente">Salvar cliente</button>
+  </div>
+</div>
+
+<!-- MODAL: HISTÓRICO / VISITAS -->
+<div class="modal-fundo oculto" id="modal-historico">
+  <div class="modal-caixa" style="position:relative;">
+    <button class="fechar-modal" data-fechar>✕</button>
+    <h2 class="serif" id="historico-titulo">Histórico</h2>
+    <div class="rotulo">Adicionar atendimento</div>
+    <div class="linha-2">
+      <input class="campo" id="hist-servico" placeholder="Ex: Volume Russo">
+      <button class="mini-btn destaque" id="btn-add-historico" style="white-space:nowrap;">Adicionar</button>
+    </div>
+    <div id="lista-historico" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+<!-- MODAL: QR CODE -->
+<div class="modal-fundo oculto" id="modal-qr">
+  <div class="modal-caixa qr-caixa" style="position:relative;">
+    <button class="fechar-modal" data-fechar>✕</button>
+    <h2 class="serif" id="qr-titulo">Cartão VIP</h2>
+    <div id="qr-render"></div>
+    <div class="qr-link-txt" id="qr-link-txt"></div>
+    <button class="botao-full fantasma" id="btn-baixar-qr">Baixar QR Code (PNG)</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>
