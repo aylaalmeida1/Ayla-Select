@@ -93,6 +93,7 @@ button{font-family:'Jost',sans-serif;cursor:pointer;}
   background:var(--carvao-2);
 }
 .nome-cliente{font-size:22px;color:var(--marfim);}
+.tempo-relacionamento{font-size:11px;color:var(--cinza);margin-top:6px;}
 .nivel-badge{
   display:inline-block;margin-top:3px;
   font-size:10px;letter-spacing:.22em;text-transform:uppercase;
