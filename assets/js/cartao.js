@@ -48,7 +48,7 @@ function renderizarCartao(cliente){
   }
 
   tpl.querySelector('[data-campo="nome"]').textContent = cliente.nome || "Cliente VIP";
-  tpl.querySelector('[data-campo="nivel"]').textContent = cliente.nivel || "VIP";
+tpl.querySelector('[data-campo="nivel"]').textContent = cliente.nivel || "Bronze";
 
   const meta = Number(cliente.meta) > 0 ? Number(cliente.meta) : 10;
   const visitas = Number(cliente.visitas) || 0;
