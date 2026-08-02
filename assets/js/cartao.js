@@ -15,7 +15,7 @@ function iniciaisDoNome(nome){
 
 function montarLinkWhatsapp(numero, mensagem){
   const somenteNumeros = (numero || "").replace(/\D/g,"");
-  const texto = encodeURIComponent(mensagem || "Olá! Vim através do meu cartão VIP do Ayla Select 💛");
+  const texto = encodeURIComponent(mensagem || "Olá! Vim através do meu cartão do Ayla Select 💛");
   return `https://wa.me/${somenteNumeros}?text=${texto}`;
 }
 
@@ -25,6 +25,12 @@ function formatarData(valor){
   if(isNaN(data.getTime())) return valor;
   return data.toLocaleDateString("pt-BR");
 }
+
+const ROTULO_TIPO_HISTORICO = {
+  atendimento: "✔ Atendimento",
+  atendimentoBonus: "⬆ Atendimento bônus",
+  indicacaoConvertida: "👤 Indicação convertida"
+};
 
 function renderizarEstadoVazio(mensagem){
   document.getElementById("conteudo").innerHTML = `
@@ -47,35 +53,53 @@ function renderizarCartao(cliente){
     slot.appendChild(div);
   }
 
-  tpl.querySelector('[data-campo="nome"]').textContent = cliente.nome || "Cliente VIP";
-tpl.querySelector('[data-campo="nivel"]').textContent = cliente.nivel || "Bronze";
+  const programa = Number(cliente.programa) || 12;
+  const categoria = cliente.categoria || "Bronze";
+  const atendimentos = Number(cliente.atendimentos) || 0;
+  const iconeCategoria = ICONE_CATEGORIA[categoria] || "";
 
-  const meta = Number(cliente.meta) > 0 ? Number(cliente.meta) : 10;
-  const visitas = Number(cliente.visitas) || 0;
-  const visitasNoCiclo = visitas % meta === 0 && visitas > 0 ? meta : visitas % meta;
-  const faltam = meta - visitasNoCiclo;
+  tpl.querySelector('[data-campo="nome"]').textContent = cliente.nome || "Cliente";
+  tpl.querySelector('[data-campo="nivel"]').textContent = `${iconeCategoria} ${categoria}`;
 
-  tpl.querySelector('[data-campo="visitas-legenda"]').textContent = `${visitas} no total`;
+  const clienteDesde = cliente.clienteDesde;
+  const tempoSlot = tpl.querySelector('[data-campo="tempo-relacionamento"]');
+  tempoSlot.textContent = clienteDesde ? tempoDeRelacionamento(clienteDesde) : "";
 
+  tpl.querySelector('[data-campo="visitas-legenda"]').textContent = `${atendimentos} no total`;
+
+  const info = atendimentosParaProximaCategoria(programa, categoria, atendimentos);
   const bracelete = tpl.querySelector('[data-campo="bracelete"]');
-  for(let i=1; i<=meta; i++){
-    const conta = document.createElement("span");
-    conta.className = "conta" + (i <= visitasNoCiclo ? " preenchida" : "");
-    bracelete.appendChild(conta);
-  }
 
-  tpl.querySelector('[data-campo="faltam"]').textContent =
-    faltam === 0 ? "Disponível agora ✦" : `${faltam} visita${faltam>1?"s":""}`;
-  tpl.querySelector('[data-campo="recompensa"]').textContent = cliente.recompensa || "Recompensa surpresa";
+  if(info){
+    // Desenha a barra do ciclo atual até a próxima categoria.
+    const limiares = { 12: { Prata: 3, Ouro: 6, Diamante: 12 }, 14: { Prata: 3, Ouro: 8, Diamante: 14 } }[programa];
+    const ordem = ["Bronze","Prata","Ouro","Diamante"];
+    const baseAnterior = ordem.indexOf(categoria) === 0 ? 0 : limiares[categoria] || 0;
+    const alvo = limiares[info.proxima];
+    const totalCiclo = Math.max(alvo - baseAnterior, 1);
+    const feitosNoCiclo = Math.max(atendimentos - baseAnterior, 0);
+    for(let i=1;i<=totalCiclo;i++){
+      const conta = document.createElement("span");
+      conta.className = "conta" + (i <= feitosNoCiclo ? " preenchida" : "");
+      bracelete.appendChild(conta);
+    }
+    tpl.querySelector('[data-campo="faltam"]').textContent =
+      info.faltam === 0 ? "Disponível agora ✦" : `Faltam ${info.faltam} atendimento${info.faltam>1?"s":""}`;
+    tpl.querySelector('[data-campo="recompensa"]').textContent = `${ICONE_CATEGORIA[info.proxima]} ${info.proxima}`;
+  } else {
+    tpl.querySelector('[data-campo="faltam"]').textContent = "Categoria máxima alcançada ✦";
+    tpl.querySelector('[data-campo="recompensa"]').textContent = "Você faz parte do nível máximo do Ayla Select";
+  }
 
   const listaBeneficios = tpl.querySelector('[data-campo="beneficios"]');
   const beneficios = Array.isArray(cliente.beneficios) ? cliente.beneficios : [];
-  if(beneficios.length === 0){
+  const beneficiosVisiveis = beneficios.filter(b => b.status !== "expirado");
+  if(beneficiosVisiveis.length === 0){
     listaBeneficios.innerHTML = `<li>Em breve novos benefícios exclusivos</li>`;
   } else {
-    beneficios.forEach(b=>{
+    beneficiosVisiveis.forEach(b=>{
       const li = document.createElement("li");
-      li.textContent = b;
+      li.textContent = `${b.icone || "✦"} ${b.nome}`;
       listaBeneficios.appendChild(li);
     });
   }
@@ -88,7 +112,8 @@ tpl.querySelector('[data-campo="nivel"]').textContent = cliente.nivel || "Bronze
     historico.slice(0,8).forEach(item=>{
       const linha = document.createElement("div");
       linha.className = "historico-item";
-      linha.innerHTML = `<span>${formatarData(item.data)}</span><span>${item.servico || "Atendimento"}</span>`;
+      const rotulo = ROTULO_TIPO_HISTORICO[item.tipo] || item.servico || "Atendimento";
+      linha.innerHTML = `<span>${formatarData(item.data)}</span><span>${rotulo}</span>`;
       historicoSlot.appendChild(linha);
     });
   }
@@ -115,7 +140,7 @@ async function iniciar(){
   try{
     const doc = await db.collection(COLECAO_CLIENTES).doc(id).get();
     if(!doc.exists){
-      renderizarEstadoVazio("Não encontramos este cartão VIP.");
+      renderizarEstadoVazio("Não encontramos este cartão.");
       return;
     }
     renderizarCartao(doc.data());
