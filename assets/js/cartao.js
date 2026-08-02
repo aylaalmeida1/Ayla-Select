@@ -121,7 +121,7 @@ async function iniciar(){
     renderizarCartao(doc.data());
   }catch(erro){
     console.error(erro);
-        renderizarEstadoVazio("ERRO: " + (erro && erro.message ? erro.message : erro));
+    renderizarEstadoVazio("Não foi possível carregar seu cartão agora.");
   }
 }
 
