@@ -53,35 +53,28 @@
         <input class="campo" id="form-whatsapp" placeholder="5511999999999">
       </div>
       <div style="flex:1;">
-        <div class="rotulo">Aniversário</div>
+        <div class="rotulo">Data de nascimento</div>
         <input class="campo" type="date" id="form-aniversario">
       </div>
     </div>
 
     <div class="linha-2">
       <div style="flex:1;">
-        <div class="rotulo">Nível</div>
-      <select class="campo" id="form-nivel">
-  <option>Bronze</option>
-  <option>Prata</option>
-  <option>Ouro</option>
-  <option>Diamante</option>
-</select>
+        <div class="rotulo">Cliente desde</div>
+        <input class="campo" type="date" id="form-cliente-desde">
       </div>
       <div style="flex:1;">
-        <div class="rotulo">Visitas p/ recompensa</div>
-        <input class="campo" type="number" id="form-meta" placeholder="10" value="10">
+        <div class="rotulo">Programa</div>
+        <select class="campo" id="form-programa">
+          <option value="12">12 atendimentos</option>
+          <option value="14">14 atendimentos</option>
+        </select>
       </div>
     </div>
+    <p style="font-size:11.5px;color:#8A8780;margin:6px 2px 0;">Categoria e benefícios são calculados automaticamente — não é preciso escolher.</p>
 
     <div class="rotulo">Foto (link de imagem — opcional)</div>
     <input class="campo" id="form-foto" placeholder="https://...">
-
-    <div class="rotulo">Recompensa atual</div>
-    <input class="campo" id="form-recompensa" placeholder="Ex: Manutenção grátis">
-
-    <div class="rotulo">Benefícios (um por linha)</div>
-    <textarea class="campo" id="form-beneficios" placeholder="10% de desconto em esmaltação&#10;Prioridade na agenda&#10;Brinde de aniversário"></textarea>
 
     <div class="rotulo">Cuidados pós-procedimento</div>
     <textarea class="campo" id="form-cuidados" placeholder="Evite molhar a região nas primeiras 24h..."></textarea>
@@ -123,6 +116,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/regras.js"></script>
 <script src="assets/js/admin.js"></script>
 </body>
 </html>
