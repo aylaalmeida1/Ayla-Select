@@ -66,9 +66,33 @@ function aplicarConfiguracoes(config) {
       Diamante: Number(config.limiarPrograma14Diamante) || LIMIARES_PROGRAMA[14].Diamante
     };
   }
-  if (config.validadeBeneficiosDias) VALIDADE_PADRAO_DIAS = Number(config.validadeBeneficiosDias);
+    if (config.validadeBeneficiosDias) VALIDADE_PADRAO_DIAS = Number(config.validadeBeneficiosDias);
   CONFIG_GERAL = { ...CONFIG_GERAL, ...config };
 }
+
+/**
+ * Aplica a identidade visual (logo, cores, fundo do cartão) na página
+ * atual. Chamar depois de aplicarConfiguracoes(), tanto no admin quanto
+ * no cartão da cliente. Sem nenhuma configuração salva, não muda nada —
+ * o visual padrão (preto/dourado) continua exatamente como está.
+ */
+function aplicarTemaVisual(cfg) {
+  const c = cfg || CONFIG_GERAL;
+  const raiz = document.documentElement;
+  if (c.corDourado) raiz.style.setProperty("--dourado", c.corDourado);
+  if (c.corDouradoClaro) raiz.style.setProperty("--dourado-claro", c.corDouradoClaro);
+  if (c.corFundo) raiz.style.setProperty("--preto", c.corFundo);
+
+  document.querySelectorAll('[data-campo="logo-marca"]').forEach((img) => {
+    if (c.logoUrl) {
+      img.src = c.logoUrl;
+      img.classList.remove("oculto");
+    } else {
+      img.classList.add("oculto");
+    }
+  });
+}
+
 
 // Define o que cada categoria libera automaticamente ao ser alcançada.
 // tipo "fixo": entra direto na lista de benefícios da cliente.
