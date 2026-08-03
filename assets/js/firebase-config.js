@@ -11,7 +11,10 @@ firebase.initializeApp(firebaseConfig);
 
 const db = firebase.firestore();
 const auth = firebase.auth();
+const storage = firebase.storage();
 
 const COLECAO_CLIENTES = "clientes";
+const COLECAO_LOG = "logAlteracoes";
+const DOC_CONFIGURACOES = "configuracoes/geral";
 
 const URL_BASE_DO_SITE = "https://aylaalmeida1.github.io/Ayla-Select";
