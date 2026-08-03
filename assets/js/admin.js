@@ -94,7 +94,12 @@ $("#btn-abrir-config").addEventListener("click", async ()=>{
     const cfg = snap.exists ? snap.data() : {};
     $("#cfg-nome-programa").value = cfg.nomePrograma || CONFIG_GERAL.nomePrograma;
     $("#cfg-link-google").value = cfg.linkAvaliacaoGoogle || "";
-    $("#cfg-validade-dias").value = cfg.validadeBeneficiosDias || VALIDADE_PADRAO_DIAS;
+      $("#cfg-validade-dias").value = cfg.validadeBeneficiosDias || VALIDADE_PADRAO_DIAS;
+    $("#cfg-logo").value = cfg.logoUrl || "";
+    $("#cfg-fundo-cartao").value = cfg.fundoCartaoUrl || "";
+    $("#cfg-cor-dourado").value = cfg.corDourado || CONFIG_GERAL.corDourado;
+    $("#cfg-cor-dourado-claro").value = cfg.corDouradoClaro || CONFIG_GERAL.corDouradoClaro;
+    $("#cfg-cor-fundo").value = cfg.corFundo || CONFIG_GERAL.corFundo;
     $("#cfg-12-prata").value = cfg.limiarPrograma12Prata || LIMIARES_PROGRAMA[12].Prata;
     $("#cfg-12-ouro").value = cfg.limiarPrograma12Ouro || LIMIARES_PROGRAMA[12].Ouro;
     $("#cfg-12-diamante").value = cfg.limiarPrograma12Diamante || LIMIARES_PROGRAMA[12].Diamante;
@@ -124,7 +129,12 @@ $("#btn-salvar-config").addEventListener("click", async ()=>{
     const cfg = {
       nomePrograma: $("#cfg-nome-programa").value.trim() || "Ayla Select",
       linkAvaliacaoGoogle: $("#cfg-link-google").value.trim(),
-      validadeBeneficiosDias: Number($("#cfg-validade-dias").value) || 30,
+            validadeBeneficiosDias: Number($("#cfg-validade-dias").value) || 30,
+      logoUrl: $("#cfg-logo").value.trim(),
+      fundoCartaoUrl: $("#cfg-fundo-cartao").value.trim(),
+      corDourado: $("#cfg-cor-dourado").value,
+      corDouradoClaro: $("#cfg-cor-dourado-claro").value,
+      corFundo: $("#cfg-cor-fundo").value,
       limiarPrograma12Prata: Number($("#cfg-12-prata").value) || 3,
       limiarPrograma12Ouro: Number($("#cfg-12-ouro").value) || 6,
       limiarPrograma12Diamante: Number($("#cfg-12-diamante").value) || 12,
@@ -140,8 +150,9 @@ $("#btn-salvar-config").addEventListener("click", async ()=>{
       ativarAvaliacaoGoogle: $("#cfg-ativar-avaliacao").checked
     };
 
-    await db.doc(DOC_CONFIGURACOES).set(cfg, { merge: true });
+        await db.doc(DOC_CONFIGURACOES).set(cfg, { merge: true });
     aplicarConfiguracoes(cfg);
+    aplicarTemaVisual(CONFIG_GERAL);
     registrarLog("⚙ Configurações gerais atualizadas");
     fecharModais();
     renderizarLista(clientesCache);
