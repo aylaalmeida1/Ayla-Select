@@ -41,7 +41,14 @@ function renderizarEstadoVazio(mensagem){
 }
 
 function renderizarCartao(cliente){
-  const tpl = document.getElementById("tpl-cartao").content.cloneNode(true);
+  const tpl = $("#tpl-cartao").content.cloneNode(true);
+
+  if(CONFIG_GERAL.fundoCartaoUrl){
+    const cartaoEl = tpl.querySelector(".cartao-vip");
+    cartaoEl.style.backgroundImage = `linear-gradient(155deg, rgba(31,30,36,.88), rgba(22,21,26,.92) 70%), url("${CONFIG_GERAL.fundoCartaoUrl}")`;
+    cartaoEl.style.backgroundSize = "cover";
+    cartaoEl.style.backgroundPosition = "center";
+  }
 
   const slot = tpl.getElementById("avatar-slot");
   if(cliente.foto){
