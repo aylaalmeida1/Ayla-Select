@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Clube VIP · Ayla Select</title>
+<title>Ayla Select</title>
 <meta name="theme-color" content="#0B0B0C">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
@@ -11,13 +11,38 @@
 </head>
 <body>
 
-<div class="tela" id="tela">
+<!-- TELA DE REGULAMENTO (bloqueia o acesso até o aceite) -->
+<div class="tela oculto" id="tela-regulamento">
+  <div class="cabecalho">
+    <svg class="flourish" width="72" height="26" viewBox="0 0 72 26">
+      <path d="M2 20 C 20 2, 34 2, 36 14 C 38 2, 52 2, 70 20"/>
+    </svg>
+    <div class="marca" data-campo="marca-nome">
+      Ayla Select
+      <small>Regulamento</small>
+    </div>
+  </div>
+
+  <div class="secao" style="margin-top:6px;">
+    <div id="regulamento-texto" style="font-size:13.5px;line-height:1.75;color:var(--marfim);white-space:pre-line;"></div>
+  </div>
+
+  <label class="check-linha" style="margin-top:22px;align-items:flex-start;">
+    <input type="checkbox" id="chk-regulamento" style="margin-top:3px;">
+    <span>Li e compreendi todas as regras do Programa <span data-campo="marca-nome-inline">Ayla Select</span>.</span>
+  </label>
+
+  <button class="botao-full" id="btn-entrar-regulamento" disabled>Entrar</button>
+</div>
+
+<!-- CARTÃO -->
+<div class="tela oculto" id="tela">
 
   <div class="cabecalho">
     <svg class="flourish" width="72" height="26" viewBox="0 0 72 26">
       <path d="M2 20 C 20 2, 34 2, 36 14 C 38 2, 52 2, 70 20"/>
     </svg>
-    <div class="marca">
+    <div class="marca" data-campo="marca-nome">
       Ayla Select
       <small>Clube VIP</small>
     </div>
@@ -42,6 +67,8 @@
       </div>
     </div>
 
+    <div data-campo="avisos"></div>
+
     <div class="progresso-wrap">
       <div class="progresso-legenda">
         <span>Atendimentos realizados</span>
@@ -56,8 +83,32 @@
     </div>
 
     <div class="secao">
-      <div class="secao-titulo">Benefícios VIP</div>
-      <ul class="lista-beneficios" data-campo="beneficios"></ul>
+      <div class="secao-titulo">🎁 Benefício desbloqueado</div>
+      <div data-campo="beneficios-desbloqueados"></div>
+    </div>
+
+    <div class="secao" data-campo="secao-avaliacao">
+      <div class="secao-titulo">⭐ Sua opinião</div>
+      <p data-campo="avaliacao-mensagem" style="font-size:13px;line-height:1.6;color:var(--marfim);"></p>
+      <a class="botao-full fantasma" id="btn-avaliar-google" style="display:block;text-align:center;" target="_blank">⭐ Avaliar no Google</a>
+      <div id="bloco-pergunta-avaliacao" class="oculto" style="margin-top:14px;text-align:center;">
+        <p style="font-size:13px;color:var(--marfim);">Você conseguiu deixar sua avaliação?</p>
+        <div class="linha-2">
+          <button class="botao-full" id="btn-avaliacao-sim" style="margin-top:0;">✅ Sim</button>
+          <button class="botao-full fantasma" id="btn-avaliacao-depois" style="margin-top:0;">⏳ Depois</button>
+        </div>
+      </div>
+      <p id="msg-avaliacao-feita" class="oculto" style="font-size:12.5px;color:var(--dourado-claro);text-align:center;margin-top:10px;">💛 Obrigada por avaliar!</p>
+    </div>
+
+    <div class="secao">
+      <div class="secao-titulo">Histórico de Benefícios</div>
+      <div data-campo="historico-beneficios"></div>
+    </div>
+
+    <div class="secao">
+      <div class="secao-titulo">Minha Jornada</div>
+      <div data-campo="jornada"></div>
     </div>
 
     <div class="secao">
