@@ -25,7 +25,8 @@ auth.onAuthStateChanged((usuario)=>{
   if(usuario){
     telaLogin.classList.add("oculto");
     telaPainel.classList.remove("oculto");
-    carregarConfiguracoes().then(()=>{
+        carregarConfiguracoes().then(()=>{
+      aplicarTemaVisual(CONFIG_GERAL);
       escutarClientes();
     });
   } else {
