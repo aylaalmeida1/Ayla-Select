@@ -36,8 +36,14 @@ let CONFIG_GERAL = {
   ativarAnimacoes: true,
   ativarIndicacoes: true,
   ativarAtendimentoBonus: true,
-  ativarAvaliacaoGoogle: true
+  ativarAvaliacaoGoogle: true,
+  logoUrl: "",
+  fundoCartaoUrl: "",
+  corDourado: "#C6A15B",
+  corDouradoClaro: "#E8D9B5",
+  corFundo: "#0B0B0C"
 };
+
 
 /**
  * Aplica os valores salvos em /configuracoes/geral (Firestore) por cima
