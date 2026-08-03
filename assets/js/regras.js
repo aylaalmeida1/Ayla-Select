@@ -18,13 +18,51 @@ const ICONE_CATEGORIA = {
 };
 
 // Atendimentos necessários (acumulados) para alcançar cada categoria,
-// por programa.
-const LIMIARES_PROGRAMA = {
+// por programa. "let" porque a tela de Configurações pode sobrescrever
+// esses valores em tempo de execução (ver aplicarConfiguracoes()).
+let LIMIARES_PROGRAMA = {
   12: { Prata: 3, Ouro: 6, Diamante: 12 },
   14: { Prata: 3, Ouro: 8, Diamante: 14 }
 };
 
-const VALIDADE_PADRAO_DIAS = 30;
+let VALIDADE_PADRAO_DIAS = 30;
+
+let CONFIG_GERAL = {
+  nomePrograma: "Ayla Select",
+  linkAvaliacaoGoogle: "",
+  textoRegulamento: "",
+  versaoRegulamento: 1,
+  ativarQr: true,
+  ativarAnimacoes: true,
+  ativarIndicacoes: true,
+  ativarAtendimentoBonus: true,
+  ativarAvaliacaoGoogle: true
+};
+
+/**
+ * Aplica os valores salvos em /configuracoes/geral (Firestore) por cima
+ * dos padrões. Deve ser chamada uma vez, logo após carregar o documento
+ * de configurações, tanto no admin quanto no cartão da cliente.
+ */
+function aplicarConfiguracoes(config) {
+  if (!config) return;
+  if (config.limiarPrograma12Prata || config.limiarPrograma12Ouro || config.limiarPrograma12Diamante) {
+    LIMIARES_PROGRAMA[12] = {
+      Prata: Number(config.limiarPrograma12Prata) || LIMIARES_PROGRAMA[12].Prata,
+      Ouro: Number(config.limiarPrograma12Ouro) || LIMIARES_PROGRAMA[12].Ouro,
+      Diamante: Number(config.limiarPrograma12Diamante) || LIMIARES_PROGRAMA[12].Diamante
+    };
+  }
+  if (config.limiarPrograma14Prata || config.limiarPrograma14Ouro || config.limiarPrograma14Diamante) {
+    LIMIARES_PROGRAMA[14] = {
+      Prata: Number(config.limiarPrograma14Prata) || LIMIARES_PROGRAMA[14].Prata,
+      Ouro: Number(config.limiarPrograma14Ouro) || LIMIARES_PROGRAMA[14].Ouro,
+      Diamante: Number(config.limiarPrograma14Diamante) || LIMIARES_PROGRAMA[14].Diamante
+    };
+  }
+  if (config.validadeBeneficiosDias) VALIDADE_PADRAO_DIAS = Number(config.validadeBeneficiosDias);
+  CONFIG_GERAL = { ...CONFIG_GERAL, ...config };
+}
 
 // Define o que cada categoria libera automaticamente ao ser alcançada.
 // tipo "fixo": entra direto na lista de benefícios da cliente.
@@ -59,8 +97,8 @@ function definirBeneficiosDaCategoria(categoria) {
   }
 }
 
-function novoIdBeneficio() {
-  return "ben_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+function novoId(prefixo) {
+  return (prefixo || "id") + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
 }
 
 function calcularCategoriaPorAtendimentos(programa, atendimentos) {
@@ -95,19 +133,35 @@ function somarDias(dataInicioISO, dias) {
   return d.toISOString();
 }
 
+function liberarBeneficiosDaCategoria(cat, dataEvento, beneficiosDestino) {
+  const definicoes = definirBeneficiosDaCategoria(cat);
+  const agora = dataEvento || dataISO();
+  definicoes.forEach((def) => {
+    beneficiosDestino.push({
+      id: novoId("ben"),
+      nome: def.nome,
+      icone: def.icone,
+      categoriaOrigem: cat,
+      tipo: def.tipo,
+      opcoes: def.opcoes || null,
+      escolhaFeita: def.tipo === "escolha_unica" ? null : undefined,
+      recebidoEm: agora,
+      validadeEm: def.validadeDias ? somarDias(agora, def.validadeDias) : null,
+      usadoEm: null,
+      status: def.tipo === "escolha_unica" ? "aguardando_escolha" : "disponivel"
+    });
+  });
+}
+
 /**
  * Aplica um novo atendimento (normal ou bônus) a uma cliente e resolve
  * toda a evolução automática decorrente: categoria, benefícios liberados,
  * Minha Jornada, atendimentos bônus em cadeia (subir de categoria pode
  * gerar novo bônus que empurra para a categoria seguinte).
  *
- * @param {object} cliente - dados atuais da cliente (do Firestore)
- * @param {"atendimento"|"atendimentoBonus"|"indicacaoConvertida"} tipoEvento
- * @param {string} descricao - texto livre do serviço (opcional)
- * @returns {object} { dados, eventos, subiuDeCategoria, novasCategoria }
- *   dados: objeto pronto para dar merge/update no Firestore
- *   eventos: lista de eventos de histórico gerados
- *   subiuDeCategoria: array de categorias conquistadas nesta operação (0..n)
+ * Todas as entradas de histórico geradas nesta chamada recebem o mesmo
+ * "acaoId" — é isso que permite o botão "Desfazer última ação" reverter
+ * a operação inteira (atendimento + bônus em cadeia) de uma vez.
  */
 function aplicarNovoAtendimento(cliente, tipoEvento, descricao) {
   const programa = Number(cliente.programa) || 12;
@@ -119,38 +173,16 @@ function aplicarNovoAtendimento(cliente, tipoEvento, descricao) {
   const historico = Array.isArray(cliente.historico) ? [...cliente.historico] : [];
 
   const categoriasConquistadas = [];
+  const acaoId = novoId("acao");
 
-  // Garante que Bronze esteja registrado na Jornada (cadastro).
   if (minhaJornada.length === 0) {
     minhaJornada.push({ categoria: "Bronze", data: cliente.criadoEm || dataISO() });
   }
 
   function registrarEvento(tipo, texto) {
-    historico.push({ data: dataISO(), tipo, servico: texto || null });
+    historico.push({ id: novoId("hist"), data: dataISO(), tipo, servico: texto || null, acaoId });
   }
 
-  function liberarBeneficiosDaCategoria(cat) {
-    const definicoes = definirBeneficiosDaCategoria(cat);
-    definicoes.forEach((def) => {
-      const agora = dataISO();
-      beneficios.push({
-        id: novoIdBeneficio(),
-        nome: def.nome,
-        icone: def.icone,
-        categoriaOrigem: cat,
-        tipo: def.tipo,
-        opcoes: def.opcoes || null,
-        escolhaFeita: def.tipo === "escolha_unica" ? null : undefined,
-        recebidoEm: agora,
-        validadeEm: def.validadeDias ? somarDias(agora, def.validadeDias) : null,
-        usadoEm: null,
-        status: def.tipo === "escolha_unica" ? "aguardando_escolha" : "disponivel"
-      });
-    });
-  }
-
-  // Processa um "+1 atendimento" (pode ser normal, bônus por evolução,
-  // ou bônus por indicação) e resolve evolução em cadeia.
   function processarUmAtendimento(origem, textoServico) {
     atendimentos += 1;
     if (origem === "atendimentoBonus" || origem === "indicacaoConvertida") {
@@ -159,8 +191,7 @@ function aplicarNovoAtendimento(cliente, tipoEvento, descricao) {
     registrarEvento(origem, textoServico);
 
     const categoriaCalculada = calcularCategoriaPorAtendimentos(programa, atendimentos);
-    if (categoriaCalculada !== categoria && ORDEM_CATEGORIAS.indexOf(categoriaCalculada) > ORDEM_CATEGORIAS.indexOf(categoria)) {
-      // Pode pular mais de uma categoria de uma vez (ex.: indicações em lote).
+    if (ORDEM_CATEGORIAS.indexOf(categoriaCalculada) > ORDEM_CATEGORIAS.indexOf(categoria)) {
       const indiceAtual = ORDEM_CATEGORIAS.indexOf(categoria);
       const indiceAlvo = ORDEM_CATEGORIAS.indexOf(categoriaCalculada);
       for (let i = indiceAtual + 1; i <= indiceAlvo; i++) {
@@ -168,8 +199,7 @@ function aplicarNovoAtendimento(cliente, tipoEvento, descricao) {
         categoria = cat;
         categoriasConquistadas.push(cat);
         minhaJornada.push({ categoria: cat, data: dataISO() });
-        liberarBeneficiosDaCategoria(cat);
-        // Toda categoria acima de Bronze concede +1 atendimento bônus automático.
+        liberarBeneficiosDaCategoria(cat, dataISO(), beneficios);
         if (cat !== "Bronze") {
           atendimentos += 1;
           atendimentosBonus += 1;
@@ -182,14 +212,50 @@ function aplicarNovoAtendimento(cliente, tipoEvento, descricao) {
   processarUmAtendimento(tipoEvento, descricao);
 
   return {
-    dados: { atendimentos, atendimentosBonus, categoria, beneficios, minhaJornada, historico },
+    dados: { atendimentos, atendimentosBonus, categoria, beneficios, minhaJornada, historico, ultimaAcaoTipo: "evento", ultimaAcaoId: acaoId },
     categoriasConquistadas
   };
 }
 
 /**
- * Cliente escolhe seu benefício único de Ouro. Só pode ser feito uma vez;
- * depois de escolhido, não pode ser alterado.
+ * Reconstrói atendimentos, atendimentosBonus, categoria, benefícios e
+ * Minha Jornada inteiramente a partir do histórico (ordenado por data).
+ * Usado ao excluir uma entrada de histórico ou ao desfazer uma ação —
+ * garante que tudo fique consistente de novo, sem editar campos à mão.
+ */
+function recalcularEstadoAPartirDoHistorico(programa, historico, criadoEm) {
+  const ordenado = [...historico].sort((a, b) => new Date(a.data) - new Date(b.data));
+  let atendimentos = 0;
+  let atendimentosBonus = 0;
+  let categoria = "Bronze";
+  const beneficios = [];
+  const minhaJornada = [{ categoria: "Bronze", data: criadoEm || dataISO() }];
+
+  ordenado.forEach((evento) => {
+    atendimentos += 1;
+    if (evento.tipo === "atendimentoBonus" || evento.tipo === "indicacaoConvertida") {
+      atendimentosBonus += 1;
+    }
+    const categoriaCalculada = calcularCategoriaPorAtendimentos(programa, atendimentos);
+    if (ORDEM_CATEGORIAS.indexOf(categoriaCalculada) > ORDEM_CATEGORIAS.indexOf(categoria)) {
+      const indiceAtual = ORDEM_CATEGORIAS.indexOf(categoria);
+      const indiceAlvo = ORDEM_CATEGORIAS.indexOf(categoriaCalculada);
+      for (let i = indiceAtual + 1; i <= indiceAlvo; i++) {
+        const cat = ORDEM_CATEGORIAS[i];
+        categoria = cat;
+        minhaJornada.push({ categoria: cat, data: evento.data });
+        liberarBeneficiosDaCategoria(cat, evento.data, beneficios);
+      }
+    }
+  });
+
+  return { atendimentos, atendimentosBonus, categoria, beneficios, minhaJornada, historico: ordenado };
+}
+
+/**
+ * Cliente (ou a administradora, temporariamente) escolhe o benefício
+ * único de Ouro. Só pode ser feito uma vez; depois de escolhido, não
+ * pode ser alterado.
  */
 function escolherBeneficioOuro(cliente, idBeneficio, idOpcaoEscolhida) {
   const beneficios = Array.isArray(cliente.beneficios) ? [...cliente.beneficios] : [];
@@ -215,8 +281,6 @@ function escolherBeneficioOuro(cliente, idBeneficio, idOpcaoEscolhida) {
 
 /**
  * Recalcula status de todos os benefícios (expira os que passaram da validade).
- * Deve ser chamado ao carregar a cliente (admin ou cartão) para manter tudo
- * sincronizado sem precisar de um job em segundo plano.
  */
 function atualizarStatusBeneficios(cliente) {
   const agora = new Date();
