@@ -60,6 +60,7 @@ button{font-family:'Jost',sans-serif;cursor:pointer;}
 
 .cabecalho{text-align:center;margin-bottom:22px;}
 .marca{font-size:26px;color:var(--marfim);margin-top:10px;}
+
 .marca small{display:block;font-family:'Jost',sans-serif;font-size:10px;letter-spacing:.3em;color:var(--cinza);text-transform:uppercase;margin-top:4px;}
 
 .cartao-vip{
