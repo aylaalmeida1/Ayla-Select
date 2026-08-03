@@ -59,8 +59,9 @@ button{font-family:'Jost',sans-serif;cursor:pointer;}
 }
 
 .cabecalho{text-align:center;margin-bottom:22px;}
+.logo-marca{display:block;max-height:56px;max-width:180px;margin:0 auto 8px;object-fit:contain;}
+.login-box .logo-marca{max-height:64px;margin-bottom:12px;}
 .marca{font-size:26px;color:var(--marfim);margin-top:10px;}
-
 .marca small{display:block;font-family:'Jost',sans-serif;font-size:10px;letter-spacing:.3em;color:var(--cinza);text-transform:uppercase;margin-top:4px;}
 
 .cartao-vip{
