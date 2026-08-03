@@ -27,10 +27,15 @@
 <div class="admin-shell oculto" id="tela-painel">
   <div class="admin-topo">
     <h1 class="serif">Minhas clientes</h1>
-    <button class="sair-btn" id="btn-sair">Sair</button>
+    <div style="display:flex;gap:8px;">
+      <button class="sair-btn" id="btn-mais">☰</button>
+      <button class="sair-btn" id="btn-sair">Sair</button>
+    </div>
   </div>
 
-  <input class="campo busca" id="busca-cliente" placeholder="Buscar cliente pelo nome...">
+  <div class="dashboard" id="dashboard"></div>
+
+  <input class="campo busca" id="busca-cliente" placeholder="Buscar por nome ou WhatsApp...">
 
   <div id="lista-clientes"></div>
 
@@ -44,6 +49,7 @@
     <h2 class="serif" id="modal-form-titulo">Nova cliente</h2>
     <input type="hidden" id="form-id">
 
+    <div class="secao-form-titulo">Dados da cliente</div>
     <div class="rotulo">Nome completo</div>
     <input class="campo" id="form-nome" placeholder="Ex: Juliana Souza">
 
@@ -71,7 +77,6 @@
         </select>
       </div>
     </div>
-    <p style="font-size:11.5px;color:#8A8780;margin:6px 2px 0;">Categoria e benefícios são calculados automaticamente — não é preciso escolher.</p>
 
     <div class="rotulo">Foto (link de imagem — opcional)</div>
     <input class="campo" id="form-foto" placeholder="https://...">
@@ -82,11 +87,62 @@
     <div class="rotulo">Link de agendamento (opcional)</div>
     <input class="campo" id="form-link-agendamento" placeholder="https://wa.me/... ou link da agenda">
 
+    <!-- Só aparece ao editar uma cliente já existente -->
+    <div id="secoes-edicao" class="oculto">
+
+      <div class="secao-form-titulo">Fidelidade</div>
+      <p style="font-size:11.5px;color:#8A8780;margin:0 2px 8px;">Categoria e benefícios são automáticos. Só altere aqui manualmente em casos excepcionais.</p>
+      <div class="linha-2">
+        <div style="flex:1;">
+          <div class="rotulo">Categoria</div>
+          <select class="campo" id="form-categoria">
+            <option value="Bronze">🥉 Bronze</option>
+            <option value="Prata">🥈 Prata</option>
+            <option value="Ouro">🥇 Ouro</option>
+            <option value="Diamante">💎 Diamante</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <div class="rotulo">Atendimentos</div>
+          <input class="campo" type="number" min="0" id="form-atendimentos">
+        </div>
+      </div>
+      <div class="rotulo">Atendimentos bônus (do total acima)</div>
+      <input class="campo" type="number" min="0" id="form-atendimentos-bonus">
+
+      <div class="rotulo">Benefícios</div>
+      <div id="lista-beneficios-edicao"></div>
+
+      <div class="secao-form-titulo">Minha Jornada</div>
+      <div id="lista-jornada-edicao"></div>
+
+      <div class="secao-form-titulo">Ficha de anamnese</div>
+      <p style="font-size:11.5px;color:#8A8780;margin:0 2px 8px;">Continua tudo no Jotform — aqui é só onde a ficha já preenchida fica guardada.</p>
+      <div class="rotulo">Link do Jotform desta cliente (opcional)</div>
+      <input class="campo" id="form-link-jotform" placeholder="https://form.jotform.com/...">
+      <button class="mini-btn" id="btn-abrir-jotform" style="margin-top:8px;" type="button">Abrir no Jotform</button>
+
+      <div class="rotulo" style="margin-top:16px;">Adicionar ficha (PDF)</div>
+      <input type="file" accept="application/pdf" id="input-anamnese-pdf" class="campo">
+      <button class="mini-btn destaque" id="btn-add-anamnese-pdf" type="button" style="margin-top:8px;">Enviar PDF</button>
+      <div class="rotulo">ou colar um link</div>
+      <div class="linha-2">
+        <input class="campo" id="input-anamnese-link" placeholder="https://...">
+        <button class="mini-btn destaque" id="btn-add-anamnese-link" type="button" style="white-space:nowrap;">Adicionar</button>
+      </div>
+      <div id="lista-anamnese" style="margin-top:12px;"></div>
+
+      <div class="secao-form-titulo">Observações internas</div>
+      <p style="font-size:11.5px;color:#8A8780;margin:0 2px 8px;">Só você vê isso. A cliente nunca tem acesso.</p>
+      <textarea class="campo" id="form-observacoes" placeholder="Anotações particulares sobre esta cliente..."></textarea>
+    </div>
+
     <button class="botao-full" id="btn-salvar-cliente">Salvar cliente</button>
+    <button class="botao-full fantasma oculto" id="btn-excluir-cliente" style="border-color:#E77;color:#E77;">🗑️ Excluir cliente</button>
   </div>
 </div>
 
-<!-- MODAL: HISTÓRICO / VISITAS -->
+<!-- MODAL: HISTÓRICO / ATENDIMENTOS -->
 <div class="modal-fundo oculto" id="modal-historico">
   <div class="modal-caixa" style="position:relative;">
     <button class="fechar-modal" data-fechar>✕</button>
@@ -104,16 +160,94 @@
 <div class="modal-fundo oculto" id="modal-qr">
   <div class="modal-caixa qr-caixa" style="position:relative;">
     <button class="fechar-modal" data-fechar>✕</button>
-    <h2 class="serif" id="qr-titulo">Cartão VIP</h2>
+    <h2 class="serif" id="qr-titulo">Cartão</h2>
     <div id="qr-render"></div>
     <div class="qr-link-txt" id="qr-link-txt"></div>
     <button class="botao-full fantasma" id="btn-baixar-qr">Baixar QR Code (PNG)</button>
   </div>
 </div>
 
+<!-- MODAL: MAIS OPÇÕES -->
+<div class="modal-fundo oculto" id="modal-mais">
+  <div class="modal-caixa" style="position:relative;">
+    <button class="fechar-modal" data-fechar>✕</button>
+    <h2 class="serif">Mais opções</h2>
+    <button class="botao-full fantasma" id="btn-abrir-config">⚙️ Configurações gerais</button>
+    <button class="botao-full fantasma" id="btn-abrir-log">📋 Registro de alterações</button>
+    <button class="botao-full fantasma" id="btn-exportar-backup">⬇️ Exportar backup</button>
+    <button class="botao-full fantasma" id="btn-importar-backup">⬆️ Importar backup</button>
+    <input type="file" accept="application/json" id="input-importar-backup" class="oculto">
+  </div>
+</div>
+
+<!-- MODAL: CONFIGURAÇÕES GERAIS -->
+<div class="modal-fundo oculto" id="modal-config">
+  <div class="modal-caixa" style="position:relative;">
+    <button class="fechar-modal" data-fechar>✕</button>
+    <h2 class="serif">Configurações gerais</h2>
+
+    <div class="rotulo">Nome do programa</div>
+    <input class="campo" id="cfg-nome-programa" placeholder="Ayla Select">
+
+    <div class="rotulo">Link da avaliação no Google</div>
+    <input class="campo" id="cfg-link-google" placeholder="https://g.page/r/...">
+
+    <div class="rotulo">Validade padrão dos benefícios (dias)</div>
+    <input class="campo" type="number" min="1" id="cfg-validade-dias">
+
+    <div class="secao-form-titulo">Programa 12 atendimentos</div>
+    <div class="linha-2">
+      <div style="flex:1;"><div class="rotulo">Prata</div><input class="campo" type="number" id="cfg-12-prata"></div>
+      <div style="flex:1;"><div class="rotulo">Ouro</div><input class="campo" type="number" id="cfg-12-ouro"></div>
+      <div style="flex:1;"><div class="rotulo">Diamante</div><input class="campo" type="number" id="cfg-12-diamante"></div>
+    </div>
+
+    <div class="secao-form-titulo">Programa 14 atendimentos</div>
+    <div class="linha-2">
+      <div style="flex:1;"><div class="rotulo">Prata</div><input class="campo" type="number" id="cfg-14-prata"></div>
+      <div style="flex:1;"><div class="rotulo">Ouro</div><input class="campo" type="number" id="cfg-14-ouro"></div>
+      <div style="flex:1;"><div class="rotulo">Diamante</div><input class="campo" type="number" id="cfg-14-diamante"></div>
+    </div>
+
+    <div class="rotulo">Texto do regulamento</div>
+    <textarea class="campo" id="cfg-regulamento" style="min-height:140px;"></textarea>
+
+    <div class="secao-form-titulo">Ativar / desativar</div>
+    <label class="check-linha"><input type="checkbox" id="cfg-ativar-qr"> QR Code</label>
+    <label class="check-linha"><input type="checkbox" id="cfg-ativar-animacoes"> Animações</label>
+    <label class="check-linha"><input type="checkbox" id="cfg-ativar-indicacoes"> Indicações</label>
+    <label class="check-linha"><input type="checkbox" id="cfg-ativar-bonus"> Atendimento bônus</label>
+    <label class="check-linha"><input type="checkbox" id="cfg-ativar-avaliacao"> Avaliação no Google</label>
+
+    <button class="botao-full" id="btn-salvar-config">Salvar configurações</button>
+  </div>
+</div>
+
+<!-- MODAL: REGISTRO DE ALTERAÇÕES -->
+<div class="modal-fundo oculto" id="modal-log">
+  <div class="modal-caixa" style="position:relative;">
+    <button class="fechar-modal" data-fechar>✕</button>
+    <h2 class="serif">Registro de alterações</h2>
+    <div id="lista-log"></div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRMAÇÃO GENÉRICA -->
+<div class="modal-fundo oculto" id="modal-confirmar">
+  <div class="modal-caixa" style="position:relative;max-width:380px;">
+    <p class="serif" id="confirmar-texto" style="font-size:18px;line-height:1.4;"></p>
+    <p id="confirmar-subtexto" style="font-size:12.5px;color:#8A8780;"></p>
+    <div class="linha-2" style="margin-top:18px;">
+      <button class="botao-full fantasma" id="btn-confirmar-cancelar" style="margin-top:0;">Cancelar</button>
+      <button class="botao-full" id="btn-confirmar-ok" style="margin-top:0;background:#E77;border-color:#E77;">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="assets/js/firebase-config.js"></script>
 <script src="assets/js/regras.js"></script>
