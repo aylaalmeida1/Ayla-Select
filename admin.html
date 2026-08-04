@@ -61,14 +61,14 @@
       </div>
       <div style="flex:1;">
         <div class="rotulo">Data de nascimento</div>
-        <input class="campo" type="date" id="form-aniversario">
+        <input class="campo" type="text" inputmode="numeric" maxlength="10" placeholder="DD/MM/AAAA" id="form-aniversario">
       </div>
     </div>
 
     <div class="linha-2">
       <div style="flex:1;">
         <div class="rotulo">Cliente desde</div>
-        <input class="campo" type="date" id="form-cliente-desde">
+        <input class="campo" type="text" inputmode="numeric" maxlength="10" placeholder="DD/MM/AAAA" id="form-cliente-desde">
       </div>
       <div style="flex:1;">
         <div class="rotulo">Programa</div>
@@ -78,15 +78,6 @@
         </select>
       </div>
     </div>
-
-    <div class="rotulo">Foto (link de imagem — opcional)</div>
-    <input class="campo" id="form-foto" placeholder="https://...">
-
-    <div class="rotulo">Cuidados pós-procedimento</div>
-    <textarea class="campo" id="form-cuidados" placeholder="Evite molhar a região nas primeiras 24h..."></textarea>
-
-    <div class="rotulo">Link de agendamento (opcional)</div>
-    <input class="campo" id="form-link-agendamento" placeholder="https://wa.me/... ou link da agenda">
 
     <!-- Só aparece ao editar uma cliente já existente -->
     <div id="secoes-edicao" class="oculto">
@@ -193,7 +184,7 @@
     <div class="rotulo">Link da avaliação no Google</div>
     <input class="campo" id="cfg-link-google" placeholder="https://g.page/r/...">
 
-       <div class="rotulo">Validade padrão dos benefícios (dias)</div>
+    <div class="rotulo">Validade padrão dos benefícios (dias)</div>
     <input class="campo" type="number" min="1" id="cfg-validade-dias">
 
     <div class="secao-form-titulo">Identidade visual</div>
@@ -206,7 +197,6 @@
       <div style="flex:1;"><div class="rotulo">Cor de destaque</div><input class="campo" type="color" id="cfg-cor-dourado-claro" style="padding:6px;height:44px;"></div>
       <div style="flex:1;"><div class="rotulo">Cor de fundo</div><input class="campo" type="color" id="cfg-cor-fundo" style="padding:6px;height:44px;"></div>
     </div>
-
 
     <div class="secao-form-titulo">Programa 12 atendimentos</div>
     <div class="linha-2">
@@ -256,6 +246,8 @@
     </div>
   </div>
 </div>
+
+<div id="toast-feedback"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
