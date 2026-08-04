@@ -25,7 +25,7 @@ auth.onAuthStateChanged((usuario)=>{
   if(usuario){
     telaLogin.classList.add("oculto");
     telaPainel.classList.remove("oculto");
-        carregarConfiguracoes().then(()=>{
+    carregarConfiguracoes().then(()=>{
       aplicarTemaVisual(CONFIG_GERAL);
       escutarClientes();
     });
@@ -47,6 +47,21 @@ $("#btn-entrar").addEventListener("click", async ()=>{
 });
 
 $("#btn-sair").addEventListener("click", ()=> auth.signOut());
+
+aplicarMascaraData($("#form-aniversario"));
+aplicarMascaraData($("#form-cliente-desde"));
+
+/* =============================================================
+   TOAST DE FEEDBACK
+   ============================================================= */
+function mostrarToast(texto){
+  const toast = $("#toast-feedback");
+  if(!toast) return;
+  toast.textContent = texto;
+  toast.classList.add("visivel");
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(()=> toast.classList.remove("visivel"), 2600);
+}
 
 /* =============================================================
    CONFIRMAÇÃO GENÉRICA (substitui os confirm() nativos)
@@ -94,7 +109,7 @@ $("#btn-abrir-config").addEventListener("click", async ()=>{
     const cfg = snap.exists ? snap.data() : {};
     $("#cfg-nome-programa").value = cfg.nomePrograma || CONFIG_GERAL.nomePrograma;
     $("#cfg-link-google").value = cfg.linkAvaliacaoGoogle || "";
-      $("#cfg-validade-dias").value = cfg.validadeBeneficiosDias || VALIDADE_PADRAO_DIAS;
+    $("#cfg-validade-dias").value = cfg.validadeBeneficiosDias || VALIDADE_PADRAO_DIAS;
     $("#cfg-logo").value = cfg.logoUrl || "";
     $("#cfg-fundo-cartao").value = cfg.fundoCartaoUrl || "";
     $("#cfg-cor-dourado").value = cfg.corDourado || CONFIG_GERAL.corDourado;
@@ -129,7 +144,7 @@ $("#btn-salvar-config").addEventListener("click", async ()=>{
     const cfg = {
       nomePrograma: $("#cfg-nome-programa").value.trim() || "Ayla Select",
       linkAvaliacaoGoogle: $("#cfg-link-google").value.trim(),
-            validadeBeneficiosDias: Number($("#cfg-validade-dias").value) || 30,
+      validadeBeneficiosDias: Number($("#cfg-validade-dias").value) || 30,
       logoUrl: $("#cfg-logo").value.trim(),
       fundoCartaoUrl: $("#cfg-fundo-cartao").value.trim(),
       corDourado: $("#cfg-cor-dourado").value,
@@ -150,7 +165,7 @@ $("#btn-salvar-config").addEventListener("click", async ()=>{
       ativarAvaliacaoGoogle: $("#cfg-ativar-avaliacao").checked
     };
 
-        await db.doc(DOC_CONFIGURACOES).set(cfg, { merge: true });
+    await db.doc(DOC_CONFIGURACOES).set(cfg, { merge: true });
     aplicarConfiguracoes(cfg);
     aplicarTemaVisual(CONFIG_GERAL);
     registrarLog("⚙ Configurações gerais atualizadas");
@@ -359,6 +374,7 @@ async function registrarAtendimento(cliente, tipoEvento, descricao){
   const resultado = aplicarNovoAtendimento(cliente, tipoEvento, descricao);
   await db.collection(COLECAO_CLIENTES).doc(cliente.id).update(resultado.dados);
   registrarLog(`${ROTULO_TIPO_HISTORICO[tipoEvento] || "Atendimento"} — ${cliente.nome}`);
+  mostrarToast(`✅ ${ROTULO_TIPO_HISTORICO[tipoEvento] || "Atendimento"} — total agora: ${resultado.dados.atendimentos}`);
 
   if(resultado.categoriasConquistadas.length > 0){
     const ultima = resultado.categoriasConquistadas[resultado.categoriasConquistadas.length - 1];
@@ -480,12 +496,9 @@ function abrirFormulario(cliente){
   $("#form-id").value = cliente ? cliente.id : "";
   $("#form-nome").value = cliente ? (cliente.nome || "") : "";
   $("#form-whatsapp").value = cliente ? (cliente.whatsapp || "") : "";
-  $("#form-aniversario").value = cliente ? (cliente.aniversario || "") : "";
-  $("#form-cliente-desde").value = cliente ? (cliente.clienteDesde || "") : new Date().toISOString().slice(0,10);
+  $("#form-aniversario").value = cliente ? dataISOParaBR(cliente.aniversario) : "";
+  $("#form-cliente-desde").value = cliente ? dataISOParaBR(cliente.clienteDesde) : dataISOParaBR(new Date().toISOString());
   $("#form-programa").value = cliente ? String(cliente.programa || 12) : "12";
-  $("#form-foto").value = cliente ? (cliente.foto || "") : "";
-  $("#form-cuidados").value = cliente ? (cliente.cuidados || "") : "";
-  $("#form-link-agendamento").value = cliente ? (cliente.linkAgendamento || "") : "";
 
   const secoes = $("#secoes-edicao");
   const btnExcluir = $("#btn-excluir-cliente");
@@ -672,11 +685,8 @@ $("#btn-salvar-cliente").addEventListener("click", async ()=>{
     const dados = {
       nome,
       whatsapp: $("#form-whatsapp").value.trim(),
-      aniversario: $("#form-aniversario").value,
-      clienteDesde: $("#form-cliente-desde").value,
-      foto: $("#form-foto").value.trim(),
-      cuidados: $("#form-cuidados").value.trim(),
-      linkAgendamento: $("#form-link-agendamento").value.trim(),
+      aniversario: dataBRParaISO($("#form-aniversario").value),
+      clienteDesde: dataBRParaISO($("#form-cliente-desde").value),
       programa: programaNovo,
       categoria: categoriaNova,
       atendimentos: Number($("#form-atendimentos").value) || 0,
@@ -701,17 +711,15 @@ $("#btn-salvar-cliente").addEventListener("click", async ()=>{
     registrarLog(`✏ Cliente editada — ${nome}`);
   } else {
     const agora = new Date().toISOString();
-    const clienteDesde = $("#form-cliente-desde").value || agora.slice(0,10);
+    const clienteDesde = dataBRParaISO($("#form-cliente-desde").value) || agora.slice(0,10);
     const novoRef = db.collection(COLECAO_CLIENTES).doc();
     await novoRef.set({
       nome,
       whatsapp: $("#form-whatsapp").value.trim(),
-      aniversario: $("#form-aniversario").value,
+      aniversario: dataBRParaISO($("#form-aniversario").value),
       clienteDesde,
       programa: Number($("#form-programa").value) || 12,
-      foto: $("#form-foto").value.trim(),
-      cuidados: $("#form-cuidados").value.trim(),
-      linkAgendamento: $("#form-link-agendamento").value.trim(),
+      foto: "",
       linkJotform: "",
       categoria: "Bronze",
       atendimentos: 0,
