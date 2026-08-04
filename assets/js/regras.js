@@ -44,7 +44,6 @@ let CONFIG_GERAL = {
   corFundo: "#0B0B0C"
 };
 
-
 /**
  * Aplica os valores salvos em /configuracoes/geral (Firestore) por cima
  * dos padrões. Deve ser chamada uma vez, logo após carregar o documento
@@ -66,7 +65,7 @@ function aplicarConfiguracoes(config) {
       Diamante: Number(config.limiarPrograma14Diamante) || LIMIARES_PROGRAMA[14].Diamante
     };
   }
-    if (config.validadeBeneficiosDias) VALIDADE_PADRAO_DIAS = Number(config.validadeBeneficiosDias);
+  if (config.validadeBeneficiosDias) VALIDADE_PADRAO_DIAS = Number(config.validadeBeneficiosDias);
   CONFIG_GERAL = { ...CONFIG_GERAL, ...config };
 }
 
@@ -92,7 +91,6 @@ function aplicarTemaVisual(cfg) {
     }
   });
 }
-
 
 // Define o que cada categoria libera automaticamente ao ser alcançada.
 // tipo "fixo": entra direto na lista de benefícios da cliente.
@@ -155,6 +153,40 @@ function atendimentosParaProximaCategoria(programa, categoriaAtual, atendimentos
 
 function dataISO() {
   return new Date().toISOString();
+}
+
+/**
+ * Converte "DD/MM/AAAA" digitado pela administradora para "AAAA-MM-DD"
+ * (formato salvo no Firestore). Retorna "" se o texto não estiver completo.
+ */
+function dataBRParaISO(dataBR) {
+  const m = (dataBR || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return "";
+  return `${m[3]}-${m[2]}-${m[1]}`;
+}
+
+/**
+ * Converte "AAAA-MM-DD" (ou um ISO completo) salvo no Firestore para
+ * "DD/MM/AAAA", para exibir no campo de texto.
+ */
+function dataISOParaBR(dataISOStr) {
+  const m = (dataISOStr || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return "";
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
+/**
+ * Aplica máscara DD/MM/AAAA enquanto a pessoa digita, sem precisar de
+ * calendário nenhum. Chamar uma vez por input de texto de data.
+ */
+function aplicarMascaraData(input) {
+  input.addEventListener("input", () => {
+    let digitos = input.value.replace(/\D/g, "").slice(0, 8);
+    let formatado = digitos;
+    if (digitos.length > 4) formatado = `${digitos.slice(0,2)}/${digitos.slice(2,4)}/${digitos.slice(4)}`;
+    else if (digitos.length > 2) formatado = `${digitos.slice(0,2)}/${digitos.slice(2)}`;
+    input.value = formatado;
+  });
 }
 
 function somarDias(dataInicioISO, dias) {
