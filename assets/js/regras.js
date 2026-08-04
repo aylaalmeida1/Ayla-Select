@@ -363,6 +363,43 @@ function diasRestantes(dataISOAlvo) {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
+const VALIDADE_ANAMNESE_MESES = 6;
+
+function somarMeses(dataISOStr, meses) {
+  const d = new Date(dataISOStr);
+  d.setMonth(d.getMonth() + meses);
+  return d.toISOString();
+}
+
+/**
+ * Retorna a ficha de anamnese mais recente da cliente (pela data), ou
+ * null se ela ainda não tiver nenhuma.
+ */
+function obterFichaMaisRecente(cliente) {
+  const fichas = Array.isArray(cliente.fichasAnamnese) ? cliente.fichasAnamnese : [];
+  if (fichas.length === 0) return null;
+  return [...fichas].sort((a, b) => new Date(b.data) - new Date(a.data))[0];
+}
+
+/**
+ * Calcula a situação da anamnese da cliente com base na ficha mais
+ * recente: validadeEm (6 meses após o preenchimento) e uma das
+ * situações "sem_ficha" | "vencida" | "vence_7" | "vence_15" | "vence_30" | "valida".
+ */
+function statusAnamnese(cliente) {
+  const ficha = obterFichaMaisRecente(cliente);
+  if (!ficha) return { situacao: "sem_ficha", dias: null, validadeEm: null, ficha: null };
+  const validadeEm = somarMeses(ficha.data, VALIDADE_ANAMNESE_MESES);
+  const dias = diasRestantes(validadeEm);
+  let situacao;
+  if (dias < 0) situacao = "vencida";
+  else if (dias <= 7) situacao = "vence_7";
+  else if (dias <= 15) situacao = "vence_15";
+  else if (dias <= 30) situacao = "vence_30";
+  else situacao = "valida";
+  return { situacao, dias, validadeEm, ficha };
+}
+
 function tempoDeRelacionamento(clienteDesdeISO) {
   if (!clienteDesdeISO) return "";
   const inicio = new Date(clienteDesdeISO);
