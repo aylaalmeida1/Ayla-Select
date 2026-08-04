@@ -39,7 +39,7 @@
 <!-- CARTÃO -->
 <div class="tela oculto" id="tela">
 
-   <div class="cabecalho">
+  <div class="cabecalho">
     <img data-campo="logo-marca" class="logo-marca oculto" alt="Logo">
     <svg class="flourish" width="72" height="26" viewBox="0 0 72 26">
       <path d="M2 20 C 20 2, 34 2, 36 14 C 38 2, 52 2, 70 20"/>
@@ -119,15 +119,17 @@
     </div>
 
     <div class="secao">
-      <details class="cuidados">
-        <summary>✦ Cuidados pós-procedimento</summary>
-        <p data-campo="cuidados"></p>
-      </details>
-    </div>
-
-    <div class="acoes">
-      <a class="botao principal" data-campo="link-agendar" target="_blank">Agendar</a>
-      <a class="botao secundario" data-campo="link-whatsapp" target="_blank">WhatsApp</a>
+      <div class="secao-titulo">Foto</div>
+      <div id="foto-atual-wrap" class="oculto" style="text-align:center;">
+        <img id="foto-atual" alt="Sua foto">
+        <div style="margin-top:10px;">
+          <button class="mini-btn" id="btn-excluir-foto" type="button">Excluir foto</button>
+        </div>
+      </div>
+      <div id="foto-upload-wrap">
+        <input type="file" accept="image/*" id="input-foto" class="campo">
+        <button class="mini-btn destaque" id="btn-add-foto" type="button" style="margin-top:8px;">Adicionar foto</button>
+      </div>
     </div>
   </div>
 
