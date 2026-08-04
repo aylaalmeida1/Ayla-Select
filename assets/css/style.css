@@ -151,6 +151,7 @@ details.cuidados summary{cursor:pointer;font-size:13.5px;color:var(--dourado-cla
 details.cuidados summary::-webkit-details-marker{display:none;}
 details.cuidados p{font-size:13px;line-height:1.6;color:var(--marfim);margin:10px 0 0;}
 
+#foto-atual{width:96px;height:96px;border-radius:50%;object-fit:cover;border:1.5px solid var(--dourado);}
 .acoes{display:flex;gap:12px;margin-top:26px;}
 .botao{
   flex:1;text-align:center;padding:13px 10px;border-radius:14px;
@@ -270,6 +271,15 @@ textarea.campo{resize:vertical;min-height:70px;}
 .qr-link-txt{font-size:11px;color:var(--cinza);word-break:break-all;margin-top:8px;}
 
 .oculto{display:none !important;}
+
+#toast-feedback{
+  position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);
+  background:var(--carvao-2);border:1px solid var(--linha);color:var(--marfim);
+  padding:12px 18px;border-radius:20px;font-size:13px;box-shadow:var(--sombra);
+  opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+  z-index:200;max-width:88%;text-align:center;
+}
+#toast-feedback.visivel{opacity:1;transform:translate(-50%,0);}
 
 @media (min-width:480px){
   .tela{padding-top:44px;}
