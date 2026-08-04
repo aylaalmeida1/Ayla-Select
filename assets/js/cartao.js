@@ -321,81 +321,49 @@ function renderizarCartao(cliente){
     });
   }
 
-  tpl.querySelector('[data-campo="cuidados"]').textContent =
-    cliente.cuidados || "Evite molhar a região nas primeiras 24h, não use produtos oleosos próximos aos olhos e escove os fios diariamente com o escovinha específico.";
-
-  tpl.querySelector('[data-campo="link-whatsapp"]').href = montarLinkWhatsapp(cliente.whatsapp);
-  tpl.querySelector('[data-campo="link-agendar"]').href =
-    cliente.linkAgendamento || montarLinkWhatsapp(cliente.whatsapp, "Olá! Quero agendar meu próximo horário 💛");
-
-  $("#conteudo").innerHTML = "";
-  $("#conteudo").appendChild(tpl);
-
-  document.querySelectorAll('[data-campo="marca-nome"]').forEach(el=>{
-    el.childNodes[0].textContent = (CONFIG_GERAL.nomePrograma || "Ayla Select") + " ";
-  });
-}
-
-$("#conteudo") && document.addEventListener("click", async (e)=>{
-  const btn = e.target.closest("button[data-escolher-ben]");
-  if(!btn || !clienteAtual) return;
-  const resultado = escolherBeneficioOuro(clienteAtual, btn.dataset.escolherBen, btn.dataset.opcao);
-  if(resultado.erro){ alert(resultado.erro); return; }
-  try{
-    await db.collection(COLECAO_CLIENTES).doc(clienteIdAtual).update({ beneficios: resultado.dados.beneficios });
-    clienteAtual = { ...clienteAtual, beneficios: resultado.dados.beneficios };
-    montarCartao();
-  }catch(erro){
-    console.error(erro);
-    alert("Não foi possível registrar sua escolha agora. Tente novamente.");
+  /* --- Foto (a cliente adiciona ou exclui a própria foto) --- */
+  const fotoAtualWrap = tpl.querySelector("#foto-atual-wrap");
+  const fotoUploadWrap = tpl.querySelector("#foto-upload-wrap");
+  if(cliente.foto){
+    tpl.querySelector("#foto-atual").src = cliente.foto;
+    fotoAtualWrap.classList.remove("oculto");
+    fotoUploadWrap.classList.add("oculto");
+  } else {
+    fotoAtualWrap.classList.add("oculto");
+    fotoUploadWrap.classList.remove("oculto");
   }
-});
 
-function montarCartao(){
-  $("#tela-regulamento").classList.add("oculto");
-  $("#tela").classList.remove("oculto");
-  renderizarCartao(clienteAtual);
-}
-
-/* =============================================================
-   INICIALIZAÇÃO
-   ============================================================= */
-async function iniciar(){
-  const id = pegarIdDaUrl();
-  if(!id){
-    renderizarEstadoVazio("Cartão não encontrado.");
-    return;
+  const btnExcluirFoto = tpl.querySelector("#btn-excluir-foto");
+  if(btnExcluirFoto){
+    btnExcluirFoto.addEventListener("click", async ()=>{
+      try{
+        await db.collection(COLECAO_CLIENTES).doc(clienteIdAtual).update({ foto: "" });
+        clienteAtual = { ...clienteAtual, foto: "" };
+        montarCartao();
+      }catch(erro){
+        console.error(erro);
+        alert("Não foi possível excluir a foto agora. Tente novamente.");
+      }
+    });
   }
-  clienteIdAtual = id;
-  try{
-    const configSnap = await db.doc(DOC_CONFIGURACOES).get();
-    if(configSnap.exists) aplicarConfiguracoes(configSnap.data());
-    aplicarTemaVisual(CONFIG_GERAL);
 
-    const doc = await db.collection(COLECAO_CLIENTES).doc(id).get();
-    if(!doc.exists){
-      renderizarEstadoVazio("Não encontramos este cartão.");
-      return;
-    }
-    let cliente = doc.data();
-
-    const { mudou, beneficios } = atualizarStatusBeneficios(cliente);
-    if(mudou){
-      cliente = { ...cliente, beneficios };
-      db.collection(COLECAO_CLIENTES).doc(id).update({ beneficios }).catch(err => console.error(err));
-    }
-
-    clienteAtual = cliente;
-
-    if(precisaAceitarRegulamento(cliente)){
-      mostrarTelaRegulamento();
-    } else {
-      montarCartao();
-    }
-  }catch(erro){
-    console.error(erro);
-    renderizarEstadoVazio("Não foi possível carregar seu cartão agora.");
-  }
-}
-
-iniciar();
+  const btnAddFoto = tpl.querySelector("#btn-add-foto");
+  if(btnAddFoto){
+    btnAddFoto.addEventListener("click", async ()=>{
+      const inputFoto = tpl.querySelector("#input-foto");
+      const arquivo = inputFoto.files[0];
+      if(!arquivo){ alert("Escolha uma imagem primeiro."); return; }
+      const textoOriginal = btnAddFoto.textContent;
+      btnAddFoto.textContent = "Enviando...";
+      btnAddFoto.disabled = true;
+      try{
+        const ref = storage.ref(`fotos/${clienteIdAtual}/foto.jpg`);
+        await ref.put(arquivo);
+        const url = await ref.getDownloadURL();
+        await db.collection(COLECAO_CLIENTES).doc(clienteIdAtual).update({ foto: url });
+        clienteAtual = { ...clienteAtual, foto: url };
+        montarCartao();
+      }catch(erro){
+        console.error(erro);
+        alert("Não foi possível enviar a foto agora. Tente novamente.");
+        bt
