@@ -78,6 +78,11 @@ function mesAnoPtBR(valor){
   return `${meses[data.getMonth()]}/${data.getFullYear()}`;
 }
 
+function rotuloHistoricoItem(item){
+  const base = ROTULO_TIPO_HISTORICO[item.tipo] || "Atendimento";
+  return item.servico ? `${base} — ${item.servico}` : base;
+}
+
 function renderizarEstadoVazio(mensagem){
   $("#conteudo").innerHTML = `
     <div class="estado-vazio">
@@ -185,6 +190,17 @@ function renderizarCartao(cliente){
       return `<div class="aviso-vencimento">⏰ ${texto}</div>`;
     }).join("");
   avisosSlot.innerHTML = avisosHtml;
+
+  /* --- Aviso de anamnese --- */
+  const avisoAnamneseSlot = tpl.querySelector('[data-campo="aviso-anamnese"]');
+  const statusAnam = statusAnamnese(cliente);
+  if(statusAnam.situacao === "vencida"){
+    avisoAnamneseSlot.innerHTML = `<div class="aviso-vencimento expirado">⚠️ Sua ficha de anamnese está vencida.<br>Antes do próximo atendimento, será necessário preencher uma nova ficha.</div>`;
+  } else if(["vence_7","vence_15","vence_30"].includes(statusAnam.situacao)){
+    avisoAnamneseSlot.innerHTML = `<div class="aviso-vencimento">📄 Sua ficha de anamnese vence em ${statusAnam.dias} dia${statusAnam.dias===1?"":"s"}.<br>Na sua próxima visita, faremos a atualização para manter seu cadastro em dia.</div>`;
+  } else {
+    avisoAnamneseSlot.innerHTML = "";
+  }
 
   /* --- Barra de progresso --- */
   tpl.querySelector('[data-campo="visitas-legenda"]').textContent = `${atendimentos} no total`;
@@ -315,7 +331,7 @@ function renderizarCartao(cliente){
     historico.slice(0,8).forEach(item=>{
       const linha = document.createElement("div");
       linha.className = "historico-item";
-      const rotulo = ROTULO_TIPO_HISTORICO[item.tipo] || item.servico || "Atendimento";
+      const rotulo = rotuloHistoricoItem(item);
       linha.innerHTML = `<span>${formatarData(item.data)}</span><span>${rotulo}</span>`;
       historicoSlot.appendChild(linha);
     });
@@ -366,4 +382,80 @@ function renderizarCartao(cliente){
       }catch(erro){
         console.error(erro);
         alert("Não foi possível enviar a foto agora. Tente novamente.");
-        bt
+        btnAddFoto.textContent = textoOriginal;
+        btnAddFoto.disabled = false;
+      }
+    });
+  }
+
+  $("#conteudo").innerHTML = "";
+  $("#conteudo").appendChild(tpl);
+
+  document.querySelectorAll('[data-campo="marca-nome"]').forEach(el=>{
+    el.childNodes[0].textContent = (CONFIG_GERAL.nomePrograma || "Ayla Select") + " ";
+  });
+}
+
+$("#conteudo") && document.addEventListener("click", async (e)=>{
+  const btn = e.target.closest("button[data-escolher-ben]");
+  if(!btn || !clienteAtual) return;
+  const resultado = escolherBeneficioOuro(clienteAtual, btn.dataset.escolherBen, btn.dataset.opcao);
+  if(resultado.erro){ alert(resultado.erro); return; }
+  try{
+    await db.collection(COLECAO_CLIENTES).doc(clienteIdAtual).update({ beneficios: resultado.dados.beneficios });
+    clienteAtual = { ...clienteAtual, beneficios: resultado.dados.beneficios };
+    montarCartao();
+  }catch(erro){
+    console.error(erro);
+    alert("Não foi possível registrar sua escolha agora. Tente novamente.");
+  }
+});
+
+function montarCartao(){
+  $("#tela-regulamento").classList.add("oculto");
+  $("#tela").classList.remove("oculto");
+  renderizarCartao(clienteAtual);
+}
+
+/* =============================================================
+   INICIALIZAÇÃO
+   ============================================================= */
+async function iniciar(){
+  const id = pegarIdDaUrl();
+  if(!id){
+    renderizarEstadoVazio("Cartão não encontrado.");
+    return;
+  }
+  clienteIdAtual = id;
+  try{
+    const configSnap = await db.doc(DOC_CONFIGURACOES).get();
+    if(configSnap.exists) aplicarConfiguracoes(configSnap.data());
+    aplicarTemaVisual(CONFIG_GERAL);
+
+    const doc = await db.collection(COLECAO_CLIENTES).doc(id).get();
+    if(!doc.exists){
+      renderizarEstadoVazio("Não encontramos este cartão.");
+      return;
+    }
+    let cliente = doc.data();
+
+    const { mudou, beneficios } = atualizarStatusBeneficios(cliente);
+    if(mudou){
+      cliente = { ...cliente, beneficios };
+      db.collection(COLECAO_CLIENTES).doc(id).update({ beneficios }).catch(err => console.error(err));
+    }
+
+    clienteAtual = cliente;
+
+    if(precisaAceitarRegulamento(cliente)){
+      mostrarTelaRegulamento();
+    } else {
+      montarCartao();
+    }
+  }catch(erro){
+    console.error(erro);
+    renderizarEstadoVazio("Não foi possível carregar seu cartão agora.");
+  }
+}
+
+iniciar();
