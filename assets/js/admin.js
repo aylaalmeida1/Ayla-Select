@@ -21,6 +21,11 @@ const ROTULO_STATUS_BENEFICIO = {
   aguardando_escolha: "Aguardando escolha"
 };
 
+function rotuloHistoricoItem(item){
+  const base = ROTULO_TIPO_HISTORICO[item.tipo] || "Atendimento";
+  return item.servico ? `${base} — ${item.servico}` : base;
+}
+
 auth.onAuthStateChanged((usuario)=>{
   if(usuario){
     telaLogin.classList.add("oculto");
@@ -80,6 +85,26 @@ $("#btn-confirmar-cancelar").addEventListener("click", ()=>{
   $("#modal-confirmar").classList.add("oculto");
   if(resolverConfirmacao){ resolverConfirmacao(false); resolverConfirmacao = null; }
 });
+
+/**
+ * Variante do modal de confirmação com dois botões com texto customizado
+ * (em vez de Cancelar/Confirmar). Resolve "primeira", "segunda" ou "nenhuma"
+ * (fechado pelo fundo). Usado no alerta de anamnese vencida.
+ */
+function confirmarAcaoOpcoes(texto, subtexto, rotuloPrimeira, rotuloSegunda){
+  return new Promise((resolve)=>{
+    $("#confirmar-texto").textContent = texto;
+    $("#confirmar-subtexto").textContent = subtexto || "";
+    $("#btn-confirmar-cancelar").textContent = rotuloPrimeira;
+    $("#btn-confirmar-ok").textContent = rotuloSegunda;
+    $("#modal-confirmar").classList.remove("oculto");
+    resolverConfirmacao = (resultado)=>{
+      $("#btn-confirmar-cancelar").textContent = "Cancelar";
+      $("#btn-confirmar-ok").textContent = "Confirmar";
+      resolve(resultado === true ? "segunda" : (resultado === false ? "primeira" : "nenhuma"));
+    };
+  });
+}
 
 /* =============================================================
    REGISTRO DE ALTERAÇÕES (log)
@@ -263,6 +288,8 @@ function renderizarDashboard(lista){
   let aniversariantes = 0;
   const mesAtual = new Date().getMonth();
 
+  const anamneseContagem = { vence_30: 0, vence_15: 0, vence_7: 0, vencida: 0, valida: 0 };
+
   lista.forEach(c=>{
     porCategoria[c.categoria || "Bronze"] = (porCategoria[c.categoria || "Bronze"] || 0) + 1;
     (Array.isArray(c.beneficios) ? c.beneficios : []).forEach(b=>{
@@ -276,7 +303,11 @@ function renderizarDashboard(lista){
       const mesAniv = new Date(c.aniversario + "T00:00:00").getMonth();
       if(mesAniv === mesAtual) aniversariantes++;
     }
+    const statusAnam = statusAnamnese(c);
+    if(anamneseContagem[statusAnam.situacao] !== undefined) anamneseContagem[statusAnam.situacao]++;
   });
+
+  const anamnesesPendentes = anamneseContagem.vence_30 + anamneseContagem.vence_15 + anamneseContagem.vence_7 + anamneseContagem.vencida;
 
   $("#dashboard").innerHTML = `
     <div class="dash-card"><b>${lista.length}</b><span>Clientes</span></div>
@@ -286,9 +317,91 @@ function renderizarDashboard(lista){
     <div class="dash-card"><b>${porCategoria.Diamante}</b><span>💎 Diamante</span></div>
     <div class="dash-card alerta"><b>${beneficiosPendentes}</b><span>Benefícios pendentes</span></div>
     <div class="dash-card alerta"><b>${beneficiosVencendo}</b><span>Vencendo em 7 dias</span></div>
-    <div class="dash-card"><b>${aniversariantes}</b><span>🎂 Aniversariantes do mês</span></div>
+    <div class="dash-card alerta" data-dashboard="anamneses" style="cursor:pointer;"><b>${anamnesesPendentes}</b><span>📄 Anamneses a vencer</span></div>
+    <div class="dash-card" data-dashboard="aniversariantes" style="cursor:pointer;"><b>${aniversariantes}</b><span>🎂 Aniversariantes do mês</span></div>
   `;
 }
+
+$("#dashboard").addEventListener("click", (e)=>{
+  const card = e.target.closest("[data-dashboard]");
+  if(!card) return;
+  if(card.dataset.dashboard === "aniversariantes") abrirAniversariantes();
+  if(card.dataset.dashboard === "anamneses") abrirAnamneses();
+});
+
+function abrirAniversariantes(){
+  const mesAtual = new Date().getMonth();
+  const lista = clientesCache
+    .filter(c => c.aniversario && new Date(c.aniversario + "T00:00:00").getMonth() === mesAtual)
+    .sort((a,b) => new Date(a.aniversario + "T00:00:00").getDate() - new Date(b.aniversario + "T00:00:00").getDate());
+
+  const container = $("#lista-aniversariantes");
+  if(lista.length === 0){
+    container.innerHTML = `<p style="font-size:12.5px;color:#8A8780;">Nenhuma aniversariante este mês.</p>`;
+  } else {
+    container.innerHTML = lista.map(c => {
+      const dia = new Date(c.aniversario + "T00:00:00").getDate();
+      return `<div class="historico-item" data-abrir-cliente="${c.id}" style="cursor:pointer;"><span>🎂 Dia ${dia}</span><span>${c.nome}</span></div>`;
+    }).join("");
+  }
+  $("#modal-aniversariantes").classList.remove("oculto");
+}
+
+$("#lista-aniversariantes").addEventListener("click", (e)=>{
+  const linha = e.target.closest("[data-abrir-cliente]");
+  if(!linha) return;
+  const cliente = clientesCache.find(c => c.id === linha.dataset.abrirCliente);
+  if(cliente){ fecharModais(); abrirFormulario(cliente); }
+});
+
+const ROTULO_SITUACAO_ANAMNESE = {
+  vence_30: "🟡 Vence em até 30 dias",
+  vence_15: "🟠 Vence em até 15 dias",
+  vence_7: "🔴 Vence em até 7 dias",
+  vencida: "❌ Vencida"
+};
+
+function abrirAnamneses(){
+  const grupos = { vence_30: [], vence_15: [], vence_7: [], vencida: [] };
+  let validas = 0;
+  clientesCache.forEach(c=>{
+    const s = statusAnamnese(c);
+    if(grupos[s.situacao]) grupos[s.situacao].push({ cliente: c, dias: s.dias });
+    if(s.situacao === "valida") validas++;
+  });
+
+  $("#resumo-anamneses").innerHTML = `
+    <div class="dash-card"><b>${validas}</b><span>Válidas</span></div>
+    <div class="dash-card alerta"><b>${grupos.vence_30.length}</b><span>🟡 30 dias</span></div>
+    <div class="dash-card alerta"><b>${grupos.vence_15.length}</b><span>🟠 15 dias</span></div>
+    <div class="dash-card alerta"><b>${grupos.vence_7.length + grupos.vencida.length}</b><span>🔴 7 dias / ❌ vencida</span></div>
+  `;
+
+  const ordem = ["vencida", "vence_7", "vence_15", "vence_30"];
+  const listasEl = $("#listas-anamneses");
+  const partes = ordem.map(chave=>{
+    const itens = grupos[chave];
+    if(itens.length === 0) return "";
+    const linhas = itens
+      .sort((a,b)=> (a.dias||0) - (b.dias||0))
+      .map(({cliente, dias}) => `
+        <div class="historico-item" data-abrir-cliente-anamnese="${cliente.id}" style="cursor:pointer;">
+          <span>${cliente.nome}</span>
+          <span>${dias !== null && dias < 0 ? `venceu há ${Math.abs(dias)}d` : `${dias}d restantes`}</span>
+        </div>`).join("");
+    return `<div class="secao-form-titulo">${ROTULO_SITUACAO_ANAMNESE[chave]} (${itens.length})</div>${linhas}`;
+  }).join("");
+  listasEl.innerHTML = partes || `<p style="font-size:12.5px;color:#8A8780;margin-top:14px;">Nenhuma anamnese próxima do vencimento.</p>`;
+
+  $("#modal-anamneses").classList.remove("oculto");
+}
+
+$("#listas-anamneses").addEventListener("click", (e)=>{
+  const linha = e.target.closest("[data-abrir-cliente-anamnese]");
+  if(!linha) return;
+  const cliente = clientesCache.find(c => c.id === linha.dataset.abrirClienteAnamnese);
+  if(cliente){ fecharModais(); abrirFormulario(cliente); }
+});
 
 /* =============================================================
    LISTA DE CLIENTES
@@ -349,16 +462,29 @@ $("#busca-cliente").addEventListener("input", (e)=>{
   ));
 });
 
-$("#lista-clientes").addEventListener("click", (e)=>{
+$("#lista-clientes").addEventListener("click", async (e)=>{
   const btn = e.target.closest("button[data-acao]");
   if(!btn) return;
   const id = btn.dataset.id;
   const cliente = clientesCache.find(c => c.id === id);
   const acao = btn.dataset.acao;
 
-  if(acao === "atendimento") registrarAtendimento(cliente, "atendimento");
-  if(acao === "bonus") registrarAtendimento(cliente, "atendimentoBonus");
-  if(acao === "indicacao") registrarAtendimento(cliente, "indicacaoConvertida", "Indicação convertida");
+  if(acao === "atendimento"){
+    const status = statusAnamnese(cliente);
+    if(status.situacao === "vencida"){
+      const escolha = await confirmarAcaoOpcoes(
+        "⚠️ Atenção! A ficha de anamnese desta cliente está vencida.",
+        "Deseja atualizar a ficha agora?",
+        "Atualizar ficha",
+        "Continuar mesmo assim"
+      );
+      if(escolha === "primeira"){ abrirFormulario(cliente); return; }
+      if(escolha === "nenhuma") return;
+    }
+    registrarAtendimento(id, "atendimento");
+  }
+  if(acao === "bonus") registrarAtendimento(id, "atendimentoBonus");
+  if(acao === "indicacao") abrirIndicacao(cliente);
   if(acao === "historico") abrirHistorico(cliente);
   if(acao === "editar" || acao === "anamnese") abrirFormulario(cliente);
   if(acao === "qr") abrirQr(cliente);
@@ -368,17 +494,39 @@ $("#lista-clientes").addEventListener("click", (e)=>{
 
 /* =============================================================
    ATENDIMENTO / BÔNUS / INDICAÇÃO
+   -------------------------------------------------------------
+   Roda em transação: lê o estado mais recente direto do servidor
+   e grava em seguida, sempre. Isso evita perder cliques quando a
+   pessoa toca o botão várias vezes rápido — cada clique parte do
+   valor real mais atual, nunca de uma cópia local desatualizada.
    ============================================================= */
-async function registrarAtendimento(cliente, tipoEvento, descricao){
-  if(!cliente) return;
-  const resultado = aplicarNovoAtendimento(cliente, tipoEvento, descricao);
-  await db.collection(COLECAO_CLIENTES).doc(cliente.id).update(resultado.dados);
-  registrarLog(`${ROTULO_TIPO_HISTORICO[tipoEvento] || "Atendimento"} — ${cliente.nome}`);
-  mostrarToast(`✅ ${ROTULO_TIPO_HISTORICO[tipoEvento] || "Atendimento"} — total agora: ${resultado.dados.atendimentos}`);
+async function registrarAtendimento(clienteId, tipoEvento, descricao){
+  if(!clienteId) return;
+  const ref = db.collection(COLECAO_CLIENTES).doc(clienteId);
+  let nomeCliente = "";
+  let categoriasConquistadas = [];
+  let totalFinal = 0;
+  try{
+    await db.runTransaction(async (tx)=>{
+      const snap = await tx.get(ref);
+      if(!snap.exists) throw new Error("Cliente não encontrada.");
+      const clienteAtual = { id: clienteId, ...snap.data() };
+      nomeCliente = clienteAtual.nome;
+      const resultado = aplicarNovoAtendimento(clienteAtual, tipoEvento, descricao);
+      categoriasConquistadas = resultado.categoriasConquistadas;
+      totalFinal = resultado.dados.atendimentos;
+      tx.update(ref, resultado.dados);
+    });
+  }catch(erro){
+    console.error(erro);
+    alert("Não foi possível registrar agora. Tente novamente.");
+    return;
+  }
+  registrarLog(`${ROTULO_TIPO_HISTORICO[tipoEvento] || "Atendimento"} — ${nomeCliente}`);
+  mostrarToast(`✅ ${ROTULO_TIPO_HISTORICO[tipoEvento] || "Atendimento"} — total agora: ${totalFinal}`);
 
-  if(resultado.categoriasConquistadas.length > 0){
-    const ultima = resultado.categoriasConquistadas[resultado.categoriasConquistadas.length - 1];
-    mostrarConquista(cliente.nome, ultima);
+  if(categoriasConquistadas.length > 0){
+    mostrarConquista(nomeCliente, categoriasConquistadas[categoriasConquistadas.length - 1]);
   }
 }
 
@@ -387,6 +535,36 @@ function mostrarConquista(nome, categoria){
   const icone = ICONE_CATEGORIA[categoria] || "🎉";
   alert(`${icone} ${nome} acabou de conquistar a categoria ${categoria}!\nOs novos benefícios já estão disponíveis no cartão dela.`);
 }
+
+/* =============================================================
+   INDICAÇÃO — pede nome da indicação e data do procedimento
+   ============================================================= */
+let clienteIndicacaoAtual = null;
+
+aplicarMascaraData($("#indicacao-data"));
+
+function abrirIndicacao(cliente){
+  clienteIndicacaoAtual = cliente;
+  $("#indicacao-titulo").textContent = `👤 Registrar indicação · ${cliente.nome}`;
+  $("#indicacao-nome").value = "";
+  $("#indicacao-data").value = "";
+  $("#modal-indicacao").classList.remove("oculto");
+}
+
+$("#btn-confirmar-indicacao").addEventListener("click", async ()=>{
+  const nomeIndicacao = $("#indicacao-nome").value.trim();
+  const dataProcedimento = $("#indicacao-data").value.trim();
+  if(!nomeIndicacao){ alert("Informe o nome da cliente indicada."); return; }
+  if(!clienteIndicacaoAtual) return;
+
+  const descricao = dataProcedimento
+    ? `${nomeIndicacao} — atendimento em ${dataProcedimento}`
+    : nomeIndicacao;
+
+  fecharModais();
+  await registrarAtendimento(clienteIndicacaoAtual.id, "indicacaoConvertida", descricao);
+  clienteIndicacaoAtual = null;
+});
 
 /* =============================================================
    DESFAZER ÚLTIMA AÇÃO
@@ -447,7 +625,7 @@ function renderizarHistoricoModal(cliente){
   lista.innerHTML = historico.map(item => `
     <div class="historico-item">
       <span>${new Date(item.data).toLocaleDateString("pt-BR")}</span>
-      <span>${ROTULO_TIPO_HISTORICO[item.tipo] || item.servico || "Atendimento"}</span>
+      <span>${rotuloHistoricoItem(item)}</span>
       ${item.id ? `<button class="mini-btn" data-excluir-hist="${item.id}" type="button" style="padding:4px 8px;">✕</button>` : ""}
     </div>
   `).join("");
@@ -456,7 +634,7 @@ function renderizarHistoricoModal(cliente){
 $("#btn-add-historico").addEventListener("click", async ()=>{
   const servico = $("#hist-servico").value.trim();
   if(!clienteHistoricoAtual || !servico) return;
-  await registrarAtendimento(clienteHistoricoAtual, "atendimento", servico);
+  await registrarAtendimento(clienteHistoricoAtual.id, "atendimento", servico);
   $("#hist-servico").value = "";
   const atualizado = clientesCache.find(c => c.id === clienteHistoricoAtual.id);
   if(atualizado){
@@ -611,11 +789,18 @@ function renderizarAnamneseList(){
     container.innerHTML = `<p style="font-size:12.5px;color:#8A8780;">Nenhuma ficha adicionada ainda.</p>`;
     return;
   }
-  container.innerHTML = fichas.map(f => `
-    <div class="anamnese-linha">
-      <a href="${f.url}" target="_blank">📄 ${f.rotulo || "Ficha de anamnese"} — ${new Date(f.data).toLocaleDateString("pt-BR")}</a>
-    </div>
-  `).join("");
+  container.innerHTML = fichas.map((f, i) => {
+    const validadeEm = somarMeses(f.data, VALIDADE_ANAMNESE_MESES);
+    const dias = diasRestantes(validadeEm);
+    const vencida = dias !== null && dias < 0;
+    const rotuloStatus = vencida ? "Expirada" : (i === 0 ? "Válida (mais recente)" : "Válida");
+    return `
+      <div class="anamnese-linha" style="flex-direction:column;align-items:flex-start;">
+        <a href="${f.url}" target="_blank">📄 ${f.rotulo || "Ficha de anamnese"} — ${new Date(f.data).toLocaleDateString("pt-BR")}</a>
+        <div style="font-size:11px;color:${vencida ? "#E77" : "#8FD79A"};margin-top:2px;">${rotuloStatus} · válida até ${new Date(validadeEm).toLocaleDateString("pt-BR")}</div>
+      </div>
+    `;
+  }).join("");
 }
 
 $("#btn-abrir-jotform").addEventListener("click", ()=>{
@@ -797,7 +982,7 @@ document.querySelectorAll(".modal-fundo").forEach(fundo=>{
   fundo.addEventListener("click", (e)=>{
     if(e.target === fundo){
       if(fundo.id === "modal-confirmar" && resolverConfirmacao){
-        resolverConfirmacao(false);
+        resolverConfirmacao(null);
         resolverConfirmacao = null;
       }
       fundo.classList.add("oculto");
