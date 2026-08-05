@@ -148,6 +148,20 @@
   </div>
 </div>
 
+<!-- MODAL: INDICAÇÃO -->
+<div class="modal-fundo oculto" id="modal-indicacao">
+  <div class="modal-caixa" style="position:relative;">
+    <button class="fechar-modal" data-fechar>✕</button>
+    <h2 class="serif" id="indicacao-titulo">👤 Registrar indicação</h2>
+    <p style="font-size:12.5px;color:#8A8780;margin:0 2px 8px;">Use somente quando a cliente indicada já tiver feito o primeiro atendimento pago.</p>
+    <div class="rotulo">Nome da indicação</div>
+    <input class="campo" id="indicacao-nome" placeholder="Nome de quem foi indicada">
+    <div class="rotulo">Data do procedimento</div>
+    <input class="campo" type="text" inputmode="numeric" maxlength="10" placeholder="DD/MM/AAAA" id="indicacao-data">
+    <button class="botao-full" id="btn-confirmar-indicacao">Registrar indicação</button>
+  </div>
+</div>
+
 <!-- MODAL: QR CODE -->
 <div class="modal-fundo oculto" id="modal-qr">
   <div class="modal-caixa qr-caixa" style="position:relative;">
@@ -232,6 +246,25 @@
     <button class="fechar-modal" data-fechar>✕</button>
     <h2 class="serif">Registro de alterações</h2>
     <div id="lista-log"></div>
+  </div>
+</div>
+
+<!-- MODAL: ANAMNESES -->
+<div class="modal-fundo oculto" id="modal-anamneses">
+  <div class="modal-caixa" style="position:relative;">
+    <button class="fechar-modal" data-fechar>✕</button>
+    <h2 class="serif">📄 Controle de Anamneses</h2>
+    <div id="resumo-anamneses" class="dashboard" style="margin-top:14px;"></div>
+    <div id="listas-anamneses" style="margin-top:10px;"></div>
+  </div>
+</div>
+
+<!-- MODAL: ANIVERSARIANTES -->
+<div class="modal-fundo oculto" id="modal-aniversariantes">
+  <div class="modal-caixa" style="position:relative;">
+    <button class="fechar-modal" data-fechar>✕</button>
+    <h2 class="serif">🎂 Aniversariantes do mês</h2>
+    <div id="lista-aniversariantes" style="margin-top:10px;"></div>
   </div>
 </div>
 
