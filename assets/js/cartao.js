@@ -84,6 +84,8 @@ function rotuloHistoricoItem(item){
 }
 
 function renderizarEstadoVazio(mensagem){
+  $("#tela-regulamento").classList.add("oculto");
+  $("#tela").classList.remove("oculto");
   $("#conteudo").innerHTML = `
     <div class="estado-vazio">
       <p class="serif" style="font-size:19px;color:#E8D9B5;">${mensagem}</p>
@@ -116,30 +118,34 @@ function mostrarTelaRegulamento(){
   $("#tela-regulamento").classList.remove("oculto");
 }
 
-$("#chk-regulamento").addEventListener("change", (e)=>{
-  $("#btn-entrar-regulamento").disabled = !e.target.checked;
-});
+if($("#chk-regulamento")){
+  $("#chk-regulamento").addEventListener("change", (e)=>{
+    $("#btn-entrar-regulamento").disabled = !e.target.checked;
+  });
+}
 
-$("#btn-entrar-regulamento").addEventListener("click", async ()=>{
-  const agora = new Date().toISOString();
-  const dados = {
-    regulamentoAceite: {
-      aceito: true,
-      versao: CONFIG_GERAL.versaoRegulamento || 1,
-      dataLeitura: agora,
-      dataAceite: agora
+if($("#btn-entrar-regulamento")){
+  $("#btn-entrar-regulamento").addEventListener("click", async ()=>{
+    const agora = new Date().toISOString();
+    const dados = {
+      regulamentoAceite: {
+        aceito: true,
+        versao: CONFIG_GERAL.versaoRegulamento || 1,
+        dataLeitura: agora,
+        dataAceite: agora
+      }
+    };
+    try{
+      await db.collection(COLECAO_CLIENTES).doc(clienteIdAtual).update(dados);
+      clienteAtual = { ...clienteAtual, ...dados };
+      $("#tela-regulamento").classList.add("oculto");
+      montarCartao();
+    }catch(erro){
+      console.error(erro);
+      alert("Não foi possível registrar seu aceite agora. Tente novamente.");
     }
-  };
-  try{
-    await db.collection(COLECAO_CLIENTES).doc(clienteIdAtual).update(dados);
-    clienteAtual = { ...clienteAtual, ...dados };
-    $("#tela-regulamento").classList.add("oculto");
-    montarCartao();
-  }catch(erro){
-    console.error(erro);
-    alert("Não foi possível registrar seu aceite agora. Tente novamente.");
-  }
-});
+  });
+}
 
 /* =============================================================
    CARTÃO
@@ -184,9 +190,10 @@ function renderizarCartao(cliente){
       const dias = diasRestantes(b.validadeEm);
       if(dias === null || dias > 7) return "";
       if(dias < 0) return "";
-      const texto = b.nome.toLowerCase().includes("off")
+      const nome = b.nome || "benefício";
+      const texto = nome.toLowerCase().includes("off")
         ? `Seu desconto expira em ${dias} dia${dias === 1 ? "" : "s"}.`
-        : `Faltam ${dias} dia${dias === 1 ? "" : "s"} para utilizar seu ${b.nome}.`;
+        : `Faltam ${dias} dia${dias === 1 ? "" : "s"} para utilizar seu ${nome}.`;
       return `<div class="aviso-vencimento">⏰ ${texto}</div>`;
     }).join("");
   avisosSlot.innerHTML = avisosHtml;
