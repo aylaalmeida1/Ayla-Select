@@ -206,7 +206,7 @@ function liberarBeneficiosDaCategoria(cat, dataEvento, beneficiosDestino) {
       categoriaOrigem: cat,
       tipo: def.tipo,
       opcoes: def.opcoes || null,
-      escolhaFeita: def.tipo === "escolha_unica" ? null : undefined,
+            escolhaFeita: null,
       recebidoEm: agora,
       validadeEm: def.validadeDias ? somarDias(agora, def.validadeDias) : null,
       usadoEm: null,
