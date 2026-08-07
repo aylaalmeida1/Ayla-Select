@@ -94,7 +94,17 @@ button{font-family:'Jost',sans-serif;cursor:pointer;}
   font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--dourado);
   background:var(--carvao-2);
 }
+.avatar-wrap{position:relative;width:58px;height:58px;cursor:pointer;flex-shrink:0;}
+.avatar-badge{
+  position:absolute;bottom:-3px;right:-3px;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--dourado);color:var(--preto);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;border:2px solid var(--carvao);
+}
+.avatar-badge-excluir{background:#E77;color:#fff;font-size:12px;}
 .nome-cliente{font-size:22px;color:var(--marfim);}
+
 .tempo-relacionamento{font-size:11px;color:var(--cinza);margin-top:6px;}
 .nivel-badge{
   display:inline-block;margin-top:3px;
