@@ -193,6 +193,53 @@ function renderizarCartao(cliente){
     slot.appendChild(div);
   }
 
+  /* --- Foto: clicar na bolinha adiciona/troca, botão ✕ remove --- */
+  const avatarWrap = tpl.querySelector("#avatar-wrap");
+  const avatarBadgeAdd = tpl.querySelector("#avatar-badge-add");
+  const avatarBadgeExcluir = tpl.querySelector("#avatar-badge-excluir");
+  const inputFotoAvatar = tpl.querySelector("#input-foto-avatar");
+
+  if(cliente.foto){
+    avatarBadgeAdd.classList.add("oculto");
+    avatarBadgeExcluir.classList.remove("oculto");
+  } else {
+    avatarBadgeAdd.classList.remove("oculto");
+    avatarBadgeExcluir.classList.add("oculto");
+  }
+
+  avatarWrap.addEventListener("click", (e)=>{
+    if(e.target.closest("#avatar-badge-excluir")) return;
+    inputFotoAvatar.click();
+  });
+
+  avatarBadgeExcluir.addEventListener("click", async (e)=>{
+    e.stopPropagation();
+    try{
+      await db.collection(COLECAO_CLIENTES).doc(clienteIdAtual).update({ foto: "" });
+      clienteAtual = { ...clienteAtual, foto: "" };
+      montarCartao();
+    }catch(erro){
+      console.error(erro);
+      alert("Não foi possível excluir a foto agora. Tente novamente.");
+    }
+  });
+
+  inputFotoAvatar.addEventListener("change", async ()=>{
+    const arquivo = inputFotoAvatar.files[0];
+    if(!arquivo) return;
+    try{
+      const ref = storage.ref(`fotos/${clienteIdAtual}/foto.jpg`);
+      await ref.put(arquivo);
+      const url = await ref.getDownloadURL();
+      await db.collection(COLECAO_CLIENTES).doc(clienteIdAtual).update({ foto: url });
+      clienteAtual = { ...clienteAtual, foto: url };
+      montarCartao();
+    }catch(erro){
+      console.error(erro);
+      alert("Não foi possível enviar a foto agora. Tente novamente.");
+    }
+  });
+
   const programa = Number(cliente.programa) || 12;
   const categoria = cliente.categoria || "Bronze";
   const atendimentos = Number(cliente.atendimentos) || 0;
@@ -364,57 +411,6 @@ function renderizarCartao(cliente){
       const rotulo = rotuloHistoricoItem(item);
       linha.innerHTML = `<span>${formatarData(item.data)}</span><span>${rotulo}</span>`;
       historicoSlot.appendChild(linha);
-    });
-  }
-
-  /* --- Foto (a cliente adiciona ou exclui a própria foto) --- */
-  const fotoAtualWrap = tpl.querySelector("#foto-atual-wrap");
-  const fotoUploadWrap = tpl.querySelector("#foto-upload-wrap");
-  if(cliente.foto){
-    tpl.querySelector("#foto-atual").src = cliente.foto;
-    fotoAtualWrap.classList.remove("oculto");
-    fotoUploadWrap.classList.add("oculto");
-  } else {
-    fotoAtualWrap.classList.add("oculto");
-    fotoUploadWrap.classList.remove("oculto");
-  }
-
-  const btnExcluirFoto = tpl.querySelector("#btn-excluir-foto");
-  if(btnExcluirFoto){
-    btnExcluirFoto.addEventListener("click", async ()=>{
-      try{
-        await db.collection(COLECAO_CLIENTES).doc(clienteIdAtual).update({ foto: "" });
-        clienteAtual = { ...clienteAtual, foto: "" };
-        montarCartao();
-      }catch(erro){
-        console.error(erro);
-        alert("Não foi possível excluir a foto agora. Tente novamente.");
-      }
-    });
-  }
-
-  const btnAddFoto = tpl.querySelector("#btn-add-foto");
-  if(btnAddFoto){
-    btnAddFoto.addEventListener("click", async ()=>{
-      const inputFoto = tpl.querySelector("#input-foto");
-      const arquivo = inputFoto.files[0];
-      if(!arquivo){ alert("Escolha uma imagem primeiro."); return; }
-      const textoOriginal = btnAddFoto.textContent;
-      btnAddFoto.textContent = "Enviando...";
-      btnAddFoto.disabled = true;
-      try{
-        const ref = storage.ref(`fotos/${clienteIdAtual}/foto.jpg`);
-        await ref.put(arquivo);
-        const url = await ref.getDownloadURL();
-        await db.collection(COLECAO_CLIENTES).doc(clienteIdAtual).update({ foto: url });
-        clienteAtual = { ...clienteAtual, foto: url };
-        montarCartao();
-      }catch(erro){
-        console.error(erro);
-        alert("Não foi possível enviar a foto agora. Tente novamente.");
-        btnAddFoto.textContent = textoOriginal;
-        btnAddFoto.disabled = false;
-      }
     });
   }
 
