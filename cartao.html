@@ -61,13 +61,19 @@
 <template id="tpl-cartao">
   <div class="cartao-vip">
     <div class="linha-topo">
-      <div id="avatar-slot"></div>
+      <div class="avatar-wrap" id="avatar-wrap">
+        <div id="avatar-slot"></div>
+        <div class="avatar-badge" id="avatar-badge-add">📷</div>
+        <button class="avatar-badge avatar-badge-excluir oculto" id="avatar-badge-excluir" type="button">✕</button>
+        <input type="file" accept="image/*" id="input-foto-avatar" style="display:none;">
+      </div>
       <div>
         <div class="nome-cliente serif" data-campo="nome"></div>
         <span class="nivel-badge" data-campo="nivel"></span>
         <div class="tempo-relacionamento" data-campo="tempo-relacionamento"></div>
       </div>
     </div>
+
 
     <div data-campo="avisos"></div>
     <div data-campo="aviso-anamnese"></div>
