@@ -1,3 +1,27 @@
+/* =============================================================
+   REDE DE SEGURANÇA — se qualquer erro inesperado acontecer em
+   qualquer lugar do script, mostra a mensagem na própria tela em
+   vez de deixar tudo preto. Isso facilita muito identificar o
+   problema sem precisar abrir o console do navegador.
+   ============================================================= */
+window.addEventListener("error", (evento)=>{
+  try{
+    const telaReg = document.getElementById("tela-regulamento");
+    const tela = document.getElementById("tela");
+    const conteudo = document.getElementById("conteudo");
+    if(telaReg) telaReg.classList.add("oculto");
+    if(tela) tela.classList.remove("oculto");
+    if(conteudo){
+      conteudo.innerHTML = `
+        <div class="estado-vazio">
+          <p class="serif" style="font-size:17px;color:#E8D9B5;">Ocorreu um erro técnico</p>
+          <p style="font-size:11px;color:#8A8780;word-break:break-word;padding:0 14px;line-height:1.6;">${evento.message || "Erro desconhecido"}<br>(${(evento.filename||"").split("/").pop()}:${evento.lineno||"?"})</p>
+        </div>`;
+    }
+  }catch(e){ /* nada a fazer se nem isso funcionar */ }
+});
+
+
 const $ = (seletor) => document.querySelector(seletor);
 
 const ROTULO_TIPO_HISTORICO = {
