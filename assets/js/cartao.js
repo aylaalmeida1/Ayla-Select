@@ -485,8 +485,9 @@ async function iniciar(){
     }
   }catch(erro){
     console.error(erro);
-    renderizarEstadoVazio("Não foi possível carregar seu cartão agora.");
+    renderizarEstadoVazio(`Não foi possível carregar seu cartão agora.<br><br><span style="font-size:11px;color:#8A8780;word-break:break-word;">${(erro && erro.message) || erro}</span>`);
   }
 }
+
 
 iniciar();
