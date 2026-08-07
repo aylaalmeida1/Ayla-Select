@@ -21,7 +21,6 @@ window.addEventListener("error", (evento)=>{
   }catch(e){ /* nada a fazer se nem isso funcionar */ }
 });
 
-
 const $ = (seletor) => document.querySelector(seletor);
 
 const ROTULO_TIPO_HISTORICO = {
@@ -488,6 +487,5 @@ async function iniciar(){
     renderizarEstadoVazio(`Não foi possível carregar seu cartão agora.<br><br><span style="font-size:11px;color:#8A8780;word-break:break-word;">${(erro && erro.message) || erro}</span>`);
   }
 }
-
 
 iniciar();
